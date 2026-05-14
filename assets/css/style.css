@@ -1,91 +1,135 @@
-/* ===== GENERAL ===== */
+/* =========================================
+   GENERAL
+========================================= */
 
 body {
+
     margin: 0;
+
     padding: 0;
+
     font-family: 'Segoe UI', sans-serif;
+
 }
 
-/* ===== LOGIN ===== */
+/* =========================================
+   LOGIN
+========================================= */
 
 .login-body {
+
     background:
-        linear-gradient(rgba(0,0,0,.8), rgba(0,0,0,.9)),
+        linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,.92)),
         url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070');
 
     background-size: cover;
+
     background-position: center;
 
     height: 100vh;
 
     display: flex;
+
     justify-content: center;
+
     align-items: center;
+
 }
 
 .login-container {
+
     width: 100%;
+
     max-width: 450px;
+
     padding: 20px;
+
 }
 
 .login-card {
 
-    background: rgba(20, 20, 25, 0.95);
+    background: rgba(20,20,25,.96);
 
     border:
-        1px solid rgba(0, 255, 255, 0.2);
+        1px solid rgba(0,255,255,.15);
 
-    border-radius: 20px;
+    border-radius: 24px;
 
     padding: 40px;
 
-    box-shadow:
-        0 0 30px rgba(0,255,255,.1);
-
     backdrop-filter: blur(10px);
 
-    animation: fadeIn 1s ease;
+    box-shadow:
+        0 0 40px rgba(0,217,255,.08);
+
 }
 
 .logo-section {
+
     text-align: center;
+
     margin-bottom: 40px;
+
 }
 
 .logo-icon {
+
     font-size: 60px;
+
     color: #00d9ff;
+
     margin-bottom: 15px;
+
 }
 
 .logo-section h1 {
+
     color: white;
-    font-weight: bold;
-    letter-spacing: 3px;
+
+    font-weight: 800;
+
+    letter-spacing: 2px;
+
 }
 
 .logo-section p {
-    color: #8e9ba7;
+
+    color: #8b949e;
+
 }
 
 .custom-input {
+
     background: #1b1f27;
-    border: 1px solid #2f3745;
+
+    border:
+        1px solid #2f3745;
+
     color: white;
+
     height: 50px;
+
 }
 
 .custom-input:focus {
+
     background: #1b1f27;
+
     color: white;
+
     border-color: #00d9ff;
-    box-shadow: 0 0 10px rgba(0,217,255,.3);
+
+    box-shadow:
+        0 0 10px rgba(0,217,255,.2);
+
 }
 
 label {
-    color: #cfd8dc;
+
+    color: #cbd5e1;
+
     margin-bottom: 8px;
+
 }
 
 .login-btn {
@@ -99,44 +143,41 @@ label {
 
     font-weight: bold;
 
+    color: white;
+
     transition: .3s;
+
 }
 
 .login-btn:hover {
+
     transform: translateY(-2px);
 
     box-shadow:
-        0 0 20px rgba(0,217,255,.5);
-}
-
-/* ===== ANIMACIONES ===== */
-
-@keyframes fadeIn {
-
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+        0 0 20px rgba(0,217,255,.25);
 
 }
 
-/* ===== DASHBOARD ===== */
+/* =========================================
+   DASHBOARD
+========================================= */
 
 .dashboard-body {
+
     background: #0f1117;
+
     display: flex;
+
 }
 
-/* SIDEBAR */
+/* =========================================
+   SIDEBAR
+========================================= */
 
 .sidebar {
 
     width: 260px;
+
     height: 100vh;
 
     background: #161b22;
@@ -147,6 +188,7 @@ label {
     position: fixed;
 
     padding-top: 20px;
+
 }
 
 .sidebar-logo {
@@ -155,17 +197,21 @@ label {
 
     font-size: 22px;
 
-    font-weight: bold;
+    font-weight: 800;
 
     padding: 20px;
 
     border-bottom:
         1px solid rgba(255,255,255,.05);
+
 }
 
 .sidebar ul {
+
     list-style: none;
+
     padding: 20px;
+
 }
 
 .sidebar ul li {
@@ -176,11 +222,14 @@ label {
 
     margin-bottom: 10px;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     transition: .3s;
 
     cursor: pointer;
+
+    font-size: 15px;
+
 }
 
 .sidebar ul li:hover,
@@ -190,41 +239,66 @@ label {
         linear-gradient(90deg,#0066ff,#00d9ff);
 
     color: white;
+
 }
 
-/* MAIN */
+/* =========================================
+   MAIN
+========================================= */
 
 .main-content {
+
     margin-left: 260px;
+
     padding: 30px;
+
     width: 100%;
+
 }
 
-/* TOPBAR */
+/* =========================================
+   TOPBAR
+========================================= */
 
 .topbar {
 
     display: flex;
+
     justify-content: space-between;
+
     align-items: center;
+
+    margin-bottom: 25px;
+
 }
 
 .topbar h2 {
+
     color: white;
+
+    font-size: 34px;
+
+    font-weight: 800;
+
 }
 
 .user-box {
 
     background: #1c2128;
 
-    padding: 10px 20px;
+    padding: 12px 20px;
 
-    border-radius: 12px;
+    border-radius: 14px;
 
     color: #00d9ff;
+
+    font-weight: 600;
+
 }
 
-/* CARDS */
+/* =========================================
+   DASHBOARD CARDS
+========================================= */
 
 .dashboard-card {
 
@@ -234,7 +308,7 @@ label {
 
     padding: 25px;
 
-    min-height: 260px;
+    min-height: 150px;
 
     display: flex;
 
@@ -242,50 +316,241 @@ label {
 
     justify-content: center;
 
+    border:
+        1px solid rgba(255,255,255,.04);
+
+    transition: .3s;
+
 }
 
 .dashboard-card:hover {
 
-    transform: translateY(-5px);
+    transform: translateY(-4px);
 
     box-shadow:
-        0 0 20px rgba(0,217,255,.2);
+        0 0 25px rgba(0,217,255,.08);
+
 }
 
 .dashboard-card h5 {
-    color: #8b949e;
+
+    color: #94a3b8;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    margin-bottom: 10px;
+
 }
 
 .dashboard-card h2 {
+
+    font-size: 52px;
+
+    font-weight: 800;
+
+    margin: 0;
+
     color: white;
-    margin-top: 10px;
+
+}
+
+/* COLORS */
+
+.dashboard-card.success h2 {
+
+    color: #00ff99;
+
 }
 
 .dashboard-card.warning h2 {
+
     color: #ffcc00;
+
 }
 
-.dashboard-card.success h2 {
+.dashboard-card.danger h2 {
+
+    color: #ff4d4d;
+
+}
+
+/* =========================================
+   MINI KPI CARDS
+========================================= */
+
+.mini-kpi-card {
+
+    background: #111827;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+    min-height: 190px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    border:
+        1px solid rgba(255,255,255,.04);
+
+    transition: .3s;
+
+}
+
+.mini-kpi-card:hover {
+
+    transform: translateY(-4px);
+
+}
+
+.mini-kpi-card h5 {
+
+    color: #d1d5db;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    margin-bottom: 15px;
+
+}
+
+.mini-kpi-card h1 {
+
+    font-size: 58px;
+
+    font-weight: 800;
+
+    margin-bottom: 10px;
+
+    color: white;
+
+}
+
+.mini-kpi-card p {
+
+    color: #94a3b8;
+
+    margin: 0;
+
+    font-size: 15px;
+
+}
+
+/* MINI COLORS */
+
+.mini-kpi-card.success h1 {
+
     color: #00ff99;
+
 }
 
-/* TABLE */
+.mini-kpi-card.warning h1 {
+
+    color: #ffcc00;
+
+}
+
+.mini-kpi-card.danger h1 {
+
+    color: #ff4d4d;
+
+}
+
+.mini-kpi-card.info h1 {
+
+    color: #00cfff;
+
+}
+
+/* =========================================
+   CHART CARD
+========================================= */
+
+.chart-card {
+
+    background: #161b22;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+    min-height: 480px;
+
+    border:
+        1px solid rgba(255,255,255,.04);
+
+}
+
+.chart-card h3 {
+
+    color: white;
+
+    font-size: 30px;
+
+    font-weight: 700;
+
+    margin-bottom: 25px;
+
+}
+
+.chart-card canvas {
+
+    max-height: 320px !important;
+
+}
+
+/* =========================================
+   TABLE SECTION
+========================================= */
 
 .table-section {
 
     background: #161b22;
 
+    border-radius: 20px;
+
     padding: 25px;
 
-    border-radius: 18px;
+    border:
+        1px solid rgba(255,255,255,.04);
+
 }
 
 .table-header h4 {
+
     color: white;
+
+    font-size: 28px;
+
+    font-weight: 700;
+
     margin-bottom: 20px;
+
 }
 
-/* ===== UPLOAD ===== */
+.table {
+
+    margin-bottom: 0;
+
+}
+
+.table td,
+.table th {
+
+    vertical-align: middle;
+
+}
+
+/* =========================================
+   UPLOAD
+========================================= */
 
 .upload-card {
 
@@ -298,7 +563,8 @@ label {
     text-align: center;
 
     border:
-        1px solid rgba(255,255,255,.05);
+        1px solid rgba(255,255,255,.04);
+
 }
 
 .upload-icon {
@@ -308,14 +574,19 @@ label {
     color: #00d9ff;
 
     margin-bottom: 20px;
+
 }
 
 .upload-card h3 {
+
     color: white;
+
 }
 
 .upload-card p {
+
     color: #8b949e;
+
 }
 
 .upload-card input {
@@ -326,9 +597,12 @@ label {
 
     border:
         1px solid #2f3745;
+
 }
 
-/* ===== SEARCH ===== */
+/* =========================================
+   SEARCH
+========================================= */
 
 .search-card {
 
@@ -336,10 +610,11 @@ label {
 
     padding: 30px;
 
-    border-radius: 18px;
+    border-radius: 20px;
 
     border:
-        1px solid rgba(255,255,255,.05);
+        1px solid rgba(255,255,255,.04);
+
 }
 
 .search-btn {
@@ -351,18 +626,22 @@ label {
 
     border: none;
 
-    font-weight: bold;
-
     color: white;
+
+    font-weight: 700;
+
 }
 
 .search-btn:hover {
 
     box-shadow:
-        0 0 20px rgba(0,217,255,.3);
+        0 0 20px rgba(0,217,255,.2);
+
 }
 
-/* ===== SCANNER ===== */
+/* =========================================
+   SCANNER
+========================================= */
 
 .scanner-card {
 
@@ -370,19 +649,246 @@ label {
 
     padding: 30px;
 
+    border-radius: 20px;
+
+    border:
+        1px solid rgba(255,255,255,.04);
+
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media(max-width: 768px){
+
+    .sidebar {
+
+        width: 95px;
+
+    }
+
+    .main-content {
+
+        margin-left: 95px;
+
+        padding: 20px;
+
+    }
+
+    .sidebar-logo span {
+
+        display: none;
+
+    }
+
+    .sidebar ul li {
+
+        text-align: center;
+
+        font-size: 12px;
+
+    }
+
+    .topbar {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+}
+
+/* ===================================== */
+/* DASHBOARD NUEVO */
+/* ===================================== */
+
+.dashboard-title {
+
+    color: white;
+
+    font-size: 32px;
+
+    font-weight: 700;
+
+    margin-bottom: 5px;
+
+}
+
+.dashboard-subtitle {
+
+    color: #8b949e;
+
+    margin: 0;
+
+}
+
+/* KPI */
+
+.dashboard-card {
+
+    position: relative;
+
+    overflow: hidden;
+
+}
+
+.dashboard-card p {
+
+    color: #8b949e;
+
+    margin: 0;
+
+    font-size: 14px;
+
+}
+
+/* ICONOS */
+
+.card-icon {
+
+    width: 55px;
+    height: 55px;
+
+    border-radius: 14px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 20px;
+
+    font-size: 22px;
+
+}
+
+.card-icon.blue {
+
+    background:
+        rgba(0, 140, 255, .15);
+
+    color: #008cff;
+
+}
+
+.card-icon.green {
+
+    background:
+        rgba(0, 255, 153, .15);
+
+    color: #00ff99;
+
+}
+
+.card-icon.red {
+
+    background:
+        rgba(255, 77, 77, .15);
+
+    color: #ff4d4d;
+
+}
+
+.card-icon.yellow {
+
+    background:
+        rgba(255, 204, 0, .15);
+
+    color: #ffcc00;
+
+}
+
+/* EXACTITUD */
+
+.accuracy-card {
+
+    text-align: center;
+
+    min-height: 100%;
+
+}
+
+.accuracy-circle {
+
+    width: 220px;
+    height: 220px;
+
+    margin: 25px auto;
+
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,255,153,.18),
+            rgba(0,255,153,.04)
+        );
+
+    border:
+        10px solid rgba(0,255,153,.25);
+
+    box-shadow:
+        0 0 40px rgba(0,255,153,.15);
+
+}
+
+.accuracy-circle span {
+
+    font-size: 52px;
+
+    font-weight: 800;
+
+    color: #00ff99;
+
+}
+
+/* CHART */
+
+.chart-card {
+
+    background: #161b22;
+
     border-radius: 18px;
+
+    padding: 25px;
 
     border:
         1px solid rgba(255,255,255,.05);
+
+    height: 100%;
+
 }
 
-.dashboard-card.danger h2 {
-    color: #ff4d4d;
+.chart-header {
+
+    margin-bottom: 20px;
+
 }
 
-/* ===== CHART ===== */
+.chart-header h4 {
 
-.chart-card {
+    color: white;
+
+    margin: 0;
+
+}
+
+.chart-card canvas {
+
+    height: 320px !important;
+
+}
+
+/* TABLA */
+
+.table-section {
 
     background: #161b22;
 
@@ -390,5 +896,44 @@ label {
 
     border-radius: 18px;
 
-    height: 100%;
+    border:
+        1px solid rgba(255,255,255,.05);
+
+}
+
+.table thead th {
+
+    color: #8b949e;
+
+    border-bottom:
+        1px solid rgba(255,255,255,.08);
+
+}
+
+.table tbody td {
+
+    color: white;
+
+    border-color:
+        rgba(255,255,255,.03);
+
+}
+
+/* RESPONSIVE */
+
+@media(max-width: 768px){
+
+    .accuracy-circle {
+
+        width: 180px;
+        height: 180px;
+
+    }
+
+    .accuracy-circle span {
+
+        font-size: 40px;
+
+    }
+
 }

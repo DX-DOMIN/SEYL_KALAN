@@ -1,116 +1,69 @@
-// TABLA
+// INVENTARIO FÍSICO
 
-const analysisTable =
-    document.getElementById(
-        'analysisTable'
-    );
+const physicalCount = JSON.parse(
+    localStorage.getItem('physicalCount')
+) || [];
 
-// KPIs
+// ELEMENTOS HTML
+
+const analyticsBody =
+    document.getElementById('analyticsBody');
 
 const okCount =
-    document.getElementById(
-        'okCount'
-    );
+    document.getElementById('okCount');
 
 const excesoCount =
-    document.getElementById(
-        'excesoCount'
-    );
+    document.getElementById('excesoCount');
 
 const faltanteCount =
-    document.getElementById(
-        'faltanteCount'
-    );
+    document.getElementById('faltanteCount');
 
 const accuracy =
-    document.getElementById(
-        'accuracy'
-    );
+    document.getElementById('accuracy');
+
+// VALIDAR HTML
+
+if (
+    analyticsBody &&
+    okCount &&
+    excesoCount &&
+    faltanteCount &&
+    accuracy
+) {
+
+    renderAnalytics();
+
+}
 
 // RENDER
 
-function renderAnalysis() {
+function renderAnalytics() {
 
-    // LEER DATOS
-
-    const physical = JSON.parse(
-
-        localStorage.getItem(
-            'physicalCount'
-        )
-
-    ) || [];
-
-    // LIMPIAR TABLA
-
-    analysisTable.innerHTML = '';
-
-    // CONTADORES
+    analyticsBody.innerHTML = '';
 
     let ok = 0;
-
-    let sobrante = 0;
-
+    let exceso = 0;
     let faltante = 0;
 
-    // SIN DATOS
-
-    if (physical.length === 0) {
-
-        analysisTable.innerHTML = `
-
-        <tr>
-
-            <td colspan="7"
-                class="text-center">
-
-                Sin análisis disponible
-
-            </td>
-
-        </tr>
-
-        `;
-
-        // KPIs VACÍOS
-
-        okCount.innerText = 0;
-
-        excesoCount.innerText = 0;
-
-        faltanteCount.innerText = 0;
-
-        accuracy.innerText = '0%';
-
-        return;
-
-    }
-
-    // RECORRER DATOS
-
-    physical.forEach(item => {
-
-        const sistema =
-            Number(item.sistema || 0);
-
-        const fisico =
-            Number(item.fisico || 0);
+    physicalCount.forEach(item => {
 
         const diferencia =
-            fisico - sistema;
+            item.fisico - item.sistema;
 
         let estado = '';
-
         let recomendacion = '';
+        let clase = '';
 
         // OK
 
-        if (fisico === sistema) {
+        if (diferencia === 0 && !item.anomaly) {
 
             estado = 'OK';
 
             recomendacion =
                 'Inventario correcto';
+
+            clase = 'success';
 
             ok++;
 
@@ -118,14 +71,16 @@ function renderAnalysis() {
 
         // SOBRANTE
 
-        else if (fisico > sistema) {
+        else if (diferencia > 0 || item.anomaly) {
 
             estado = 'SOBRANTE';
 
             recomendacion =
                 'Ingresar mercancía sobrante';
 
-            sobrante++;
+            clase = 'warning';
+
+            exceso++;
 
         }
 
@@ -136,13 +91,15 @@ function renderAnalysis() {
             estado = 'FALTANTE';
 
             recomendacion =
-                'Enviar producto a LOST';
+                'Enviar diferencia a LOST';
+
+            clase = 'danger';
 
             faltante++;
 
         }
 
-        // ANOMALÍA
+        // FUERA DE UBICACIÓN
 
         if (item.anomaly) {
 
@@ -151,76 +108,55 @@ function renderAnalysis() {
 
         }
 
-        // FILA
+        // TABLA
 
-        analysisTable.innerHTML += `
+        analyticsBody.innerHTML += `
 
-        <tr>
+            <tr>
 
-            <td>
-                ${item.location || '-'}
-            </td>
+                <td>${item.upc}</td>
 
-            <td>
-                ${item.upc || '-'}
-            </td>
+                <td>${item.descripcion}</td>
 
-            <td>
-                ${item.descripcion || '-'}
-            </td>
+                <td>${item.sistema}</td>
 
-            <td>
-                ${sistema}
-            </td>
+                <td>${item.fisico}</td>
 
-            <td>
-                ${fisico}
-            </td>
+                <td>${diferencia}</td>
 
-            <td>
-                ${diferencia}
-            </td>
+                <td>
 
-            <td>
-                ${estado}
-            </td>
+                    <span class="badge bg-${clase}">
+                        ${estado}
+                    </span>
 
-            <td>
-                ${recomendacion}
-            </td>
+                </td>
 
-        </tr>
+                <td>${recomendacion}</td>
+
+            </tr>
 
         `;
 
     });
 
-    // ACTUALIZAR KPIs
+    // KPIs
 
-    okCount.innerText =
-        ok;
+    okCount.innerText = ok;
 
-    excesoCount.innerText =
-        sobrante;
+    excesoCount.innerText = exceso;
 
-    faltanteCount.innerText =
-        faltante;
-
-    // EXACTITUD
+    faltanteCount.innerText = faltante;
 
     const total =
-        physical.length;
+        ok + exceso + faltante;
 
-    const exactitud =
-        (
-            (ok / total) * 100
-        ).toFixed(1);
+    const porcentaje =
+        total > 0
+            ? ((ok / total) * 100).toFixed(1)
+            : 0;
 
     accuracy.innerText =
-        exactitud + '%';
+        `${porcentaje}%`;
 
 }
-
-// EJECUTAR
-
-renderAnalysis();

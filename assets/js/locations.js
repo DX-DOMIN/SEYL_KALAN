@@ -1,49 +1,91 @@
-// BUSCAR UBICACIÓN
+// =========================================
+// BUSCAR INVENTARIO
+// =========================================
 
 function searchLocation() {
 
-    const location = document
+    // INPUT
+
+    const search = document
         .getElementById('locationInput')
         .value
         .trim()
         .toUpperCase();
 
-    const inventory = JSON.parse(
-        localStorage.getItem('inventoryData')
-    );
+    // INVENTARIO
 
-    const resultsBody = document.getElementById('resultsBody');
+    const inventory = JSON.parse(
+
+        localStorage.getItem(
+            'inventoryData'
+        )
+
+    ) || [];
+
+    // BODY TABLA
+
+    const resultsBody =
+        document.getElementById(
+            'resultsBody'
+        );
+
+    // LIMPIAR TABLA
 
     resultsBody.innerHTML = '';
 
-    if (!inventory) {
+    // VALIDAR INVENTARIO
 
-        alert('No existe inventario cargado');
+    if (inventory.length === 0) {
+
+        alert(
+            'No existe inventario cargado'
+        );
+
         return;
 
     }
 
-    // FILTRAR UBICACIÓN
+    // FILTRAR
 
     const filtered = inventory.filter(item =>
-        item.ubicacion.toUpperCase() === location
+
+        // BUSCAR POR UBICACIÓN
+
+        item.ubicacion
+            ?.toUpperCase()
+            .includes(search)
+
+        ||
+
+        // BUSCAR POR UPC
+
+        item.upc
+            ?.toUpperCase()
+            .includes(search)
+
     );
 
-    // VALIDACIÓN
+    // SIN RESULTADOS
 
     if (filtered.length === 0) {
 
         resultsBody.innerHTML = `
-        
+
             <tr>
-                <td colspan="6" class="text-center text-warning">
-                    Ubicación no encontrada
+
+                <td colspan="6"
+                    class="text-center text-warning">
+
+                    Sin resultados para la consulta
+
                 </td>
+
             </tr>
-        
+
         `;
 
         return;
+
     }
 
     // MOSTRAR RESULTADOS
@@ -51,18 +93,23 @@ function searchLocation() {
     filtered.forEach(item => {
 
         resultsBody.innerHTML += `
-        
+
             <tr>
 
                 <td>${item.ubicacion}</td>
+
                 <td>${item.upc}</td>
+
                 <td>${item.descripcion}</td>
+
                 <td>${item.existencias}</td>
+
                 <td>${item.reservado}</td>
+
                 <td>${item.disponible}</td>
 
             </tr>
-        
+
         `;
 
     });

@@ -10,7 +10,7 @@ let physicalCount = JSON.parse(
     localStorage.getItem('physicalCount')
 ) || [];
 
-// INPUT
+// INPUTS
 
 const scannerInput =
     document.getElementById('scannerInput');
@@ -42,6 +42,16 @@ function processScan() {
 
     const upc =
         scannerInput.value.trim();
+
+    // NUEVO → CANTIDAD CAPTURADA
+
+    const qty = parseInt(
+
+        document.getElementById(
+            'qtyInput'
+        ).value
+
+    ) || 1;
 
     // VALIDACIONES
 
@@ -129,19 +139,19 @@ function processScan() {
     // VALIDAR EXISTENTE
 
     let existing =
-    physicalCount.find(item =>
+        physicalCount.find(item =>
 
-        item.upc === upc &&
+            item.upc === upc &&
 
-        item.location === location
+            item.location === location
 
-    );
+        );
 
-    // SUMAR
+    // SUMAR EXISTENTE
 
     if (existing) {
 
-        existing.fisico++;
+        existing.fisico += qty;
 
     }
 
@@ -149,29 +159,29 @@ function processScan() {
 
     else {
 
-        physicalCount.push({
+        physicalCount.unshift({
 
             location: location,
-        
+
             upc:
                 systemItem.upc,
-        
+
             descripcion:
                 systemItem.descripcion,
-        
+
             sistema:
                 parseInt(
                     systemItem.existencias
                 ),
-        
-            fisico: 1,
-        
+
+            fisico: qty,
+
             anomaly: anomaly,
-        
+
             ubicacionCorrecta:
                 systemItem.ubicacionCorrecta
                 || 'OK'
-        
+
         });
 
     }
@@ -184,9 +194,13 @@ function processScan() {
 
     saveMovement(location, upc);
 
-    // LIMPIAR INPUT
+    // LIMPIAR INPUTS
 
     scannerInput.value = '';
+
+    document.getElementById(
+        'qtyInput'
+    ).value = 1;
 
     scannerInput.focus();
 
@@ -317,7 +331,9 @@ function renderTable() {
 
 }
 
+// =====================================
 // GUARDAR MOVIMIENTO
+// =====================================
 
 function saveMovement(location, upc) {
 
@@ -329,16 +345,39 @@ function saveMovement(location, upc) {
 
     ) || [];
 
+    // FECHA ACTUAL
+
+    const now = new Date();
+
+    const formattedDate =
+
+        now.toLocaleDateString() +
+
+        ' ' +
+
+        now.toLocaleTimeString();
+
+    // INSERTAR AL INICIO
+
     movements.unshift({
 
         location: location,
 
         upc: upc,
 
-        date: new Date()
-            .toLocaleString(),
+        date: formattedDate
 
     });
+
+    // LIMITE MOVIMIENTOS
+
+    if (movements.length > 100) {
+
+        movements.pop();
+
+    }
+
+    // GUARDAR
 
     localStorage.setItem(
 

@@ -1,28 +1,47 @@
-// ESPERAR HTML
+// =====================================
+// DASHBOARD OPERATIVO
+// =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // INVENTARIO ERP
+    // INVENTARIO
 
     const inventory = JSON.parse(
         localStorage.getItem('inventoryData')
     ) || [];
 
-    // BARRIDO FÍSICO
+    // CONTEO FÍSICO
 
     const physical = JSON.parse(
         localStorage.getItem('physicalCount')
     ) || [];
 
+    // MOVIMIENTOS
+
+    const movements = JSON.parse(
+        localStorage.getItem('movements')
+    ) || [];
+
     // KPIs
 
     let ok = 0;
-    let exceso = 0;
     let diferencia = 0;
+    let exceso = 0;
 
-    // ANALIZAR
+    // ANALIZAR DATOS
 
     physical.forEach(item => {
+
+        // ANOMALÍA
+
+        if (item.anomaly) {
+
+            diferencia++;
+            return;
+
+        }
+
+        // OK
 
         if (item.fisico === item.sistema) {
 
@@ -30,11 +49,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
 
+        // DIFERENCIA
+
         else if (item.fisico < item.sistema) {
 
             diferencia++;
 
         }
+
+        // EXCESO
 
         else {
 
@@ -47,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // TOTAL
 
     const total =
-        ok + exceso + diferencia;
+        ok + diferencia + exceso;
 
     // EXACTITUD
 
@@ -56,97 +79,119 @@ document.addEventListener('DOMContentLoaded', () => {
             ? ((ok / total) * 100).toFixed(1)
             : 0;
 
-    // INSERTAR KPIs
+    // INSERTAR KPIS
 
-    const totalReviewed =
-        document.getElementById('totalReviewed');
+    document.getElementById(
+        'totalReviewed'
+    ).innerText = total;
 
-    const okProducts =
-        document.getElementById('okProducts');
+    document.getElementById(
+        'okProducts'
+    ).innerText = ok;
 
-    const differenceProducts =
-        document.getElementById('differenceProducts');
+    document.getElementById(
+        'differenceProducts'
+    ).innerText = diferencia;
 
-    const excessProducts =
-        document.getElementById('excessProducts');
+    document.getElementById(
+        'excessProducts'
+    ).innerText = exceso;
 
-    const accuracyPercent =
-        document.getElementById('accuracyPercent');
+    document.getElementById(
+        'accuracyPercent'
+    ).innerText = accuracy + '%';
 
-    // VALIDAR EXISTENCIA HTML
-
-    if (
-        totalReviewed &&
-        okProducts &&
-        differenceProducts &&
-        excessProducts &&
-        accuracyPercent
-    ) {
-
-        totalReviewed.innerText = total;
-
-        okProducts.innerText = ok;
-
-        differenceProducts.innerText = diferencia;
-
-        excessProducts.innerText = exceso;
-
-        accuracyPercent.innerText =
-            accuracy + '%';
-
-    }
-
+    // =====================================
     // CHART
+    // =====================================
 
-    const chartCanvas =
-        document.getElementById('inventoryChart');
+    const ctx =
+        document.getElementById(
+            'inventoryChart'
+        );
 
-    if (chartCanvas) {
+    new Chart(ctx, {
 
-        new Chart(chartCanvas, {
+        type: 'bar',
 
-            type: 'doughnut',
+        data: {
 
-            data: {
+            labels: [
+                'OK',
+                'Diferencias',
+                'Exceso'
+            ],
 
-                labels: [
-                    'OK',
-                    'Diferencia Negativa',
-                    'Exceso Físico'
+            datasets: [{
+
+                label: 'Productos',
+
+                data: [
+                    ok,
+                    diferencia,
+                    exceso
                 ],
 
-                datasets: [{
+                backgroundColor: [
+                    '#00ff99',
+                    '#ff4d4d',
+                    '#ffcc00'
+                ],
 
-                    data: [
-                        ok,
-                        diferencia,
-                        exceso
-                    ],
+                borderRadius: 10
 
-                    backgroundColor: [
-                        '#00ff99',
-                        '#ff4d4d',
-                        '#ffcc00'
-                    ],
+            }]
 
-                    borderWidth: 0
+        },
 
-                }]
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                }
 
             },
 
-            options: {
+            scales: {
 
-                responsive: true,
+                x: {
 
-                plugins: {
+                    ticks: {
 
-                    legend: {
+                        color: '#c9d1d9'
 
-                        labels: {
+                    },
 
-                            color: 'white'
-                        }
+                    grid: {
+
+                        display: false
+
+                    }
+
+                },
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+
+                        color: '#c9d1d9'
+
+                    },
+
+                    grid: {
+
+                        color:
+                            'rgba(255,255,255,.05)'
 
                     }
 
@@ -154,8 +199,148 @@ document.addEventListener('DOMContentLoaded', () => {
 
             }
 
-        });
+        }
+
+    });
+
+    // =====================================
+    // TABLA MOVIMIENTOS
+    // =====================================
+
+    const table =
+        document.getElementById(
+            'movementsTable'
+        );
+
+    table.innerHTML = '';
+
+    // ÚLTIMOS 10
+
+    const latest =
+        movements.slice(0, 10);
+
+    // VACÍO
+
+    if (latest.length === 0) {
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td colspan="4"
+                    class="text-center text-secondary">
+
+                    Sin movimientos registrados
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
 
     }
+
+    // RENDER
+
+    latest.forEach(move => {
+
+        // BUSCAR PRODUCTO
+
+        const product =
+            inventory.find(item =>
+
+                item.upc === move.upc
+
+            );
+
+        // DESCRIPCIÓN
+
+        const descripcion =
+            product
+                ? product.descripcion
+                : 'UPC NO REGISTRADO';
+
+        // ESTADO
+
+        let estado = 'OK';
+        let badge = 'success';
+
+        const scanned =
+            physical.find(item =>
+
+                item.upc === move.upc &&
+
+                item.location === move.location
+
+            );
+
+        if (scanned) {
+
+            if (scanned.anomaly) {
+
+                estado = 'ANOMALÍA';
+                badge = 'warning';
+
+            }
+
+            else if (
+                scanned.fisico < scanned.sistema
+            ) {
+
+                estado = 'FALTANTE';
+                badge = 'danger';
+
+            }
+
+            else if (
+                scanned.fisico > scanned.sistema
+            ) {
+
+                estado = 'EXCESO';
+                badge = 'warning';
+
+            }
+
+        }
+
+        // HTML
+
+        table.innerHTML += `
+
+            <tr>
+
+                <td>${move.location}</td>
+
+                <td>${move.upc}</td>
+
+                <td>${descripcion}</td>
+
+                <td>
+
+                    <span class="badge bg-${badge}">
+
+                        ${estado}
+
+                    </span>
+
+                </td>
+
+                <td>
+
+    ${
+        move.date
+            ? move.date
+            : 'Sin fecha'
+    }
+
+</td>
+
+            </tr>
+
+        `;
+
+    });
 
 });
