@@ -153,6 +153,9 @@ function processScan() {
 
         existing.fisico += qty;
 
+existing.fecha =
+    new Date().toLocaleString();
+
     }
 
     // NUEVO REGISTRO
@@ -162,26 +165,29 @@ function processScan() {
         physicalCount.unshift({
 
             location: location,
-
+        
             upc:
                 systemItem.upc,
-
+        
             descripcion:
                 systemItem.descripcion,
-
+        
             sistema:
                 parseInt(
                     systemItem.existencias
                 ),
-
+        
             fisico: qty,
-
+        
+            fecha:
+                new Date().toLocaleString(),
+        
             anomaly: anomaly,
-
+        
             ubicacionCorrecta:
                 systemItem.ubicacionCorrecta
                 || 'OK'
-
+        
         });
 
     }

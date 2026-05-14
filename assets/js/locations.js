@@ -1,73 +1,41 @@
-// =========================================
-// BUSCAR INVENTARIO
-// =========================================
+// =====================================
+// ESPERAR DB
+// =====================================
 
-function searchLocation() {
+window.onload = async function () {
+
+    await initDB();
+
+};
+
+// =====================================
+// BUSCAR
+// =====================================
+
+async function searchLocation() {
 
     // INPUT
 
     const search = document
-        .getElementById('locationInput')
+        .getElementById(
+            'locationInput'
+        )
         .value
         .trim()
         .toUpperCase();
 
-    // INVENTARIO
-
-    const inventory = JSON.parse(
-
-        localStorage.getItem(
-            'inventoryData'
-        )
-
-    ) || [];
-
-    // BODY TABLA
+    // TABLA
 
     const resultsBody =
         document.getElementById(
             'resultsBody'
         );
 
-    // LIMPIAR TABLA
-
     resultsBody.innerHTML = '';
 
-    // VALIDAR INVENTARIO
+    // VALIDAR
 
-    if (inventory.length === 0) {
-
-        alert(
-            'No existe inventario cargado'
-        );
-
-        return;
-
-    }
-
-    // FILTRAR
-
-    const filtered = inventory.filter(item =>
-
-        // BUSCAR POR UBICACIÓN
-
-        item.ubicacion
-            ?.toUpperCase()
-            .includes(search)
-
-        ||
-
-        // BUSCAR POR UPC
-
-        item.upc
-            ?.toUpperCase()
-            .includes(search)
-
-    );
-
-    // SIN RESULTADOS
-
-    if (filtered.length === 0) {
+    if (!search) {
 
         resultsBody.innerHTML = `
 
@@ -76,7 +44,7 @@ function searchLocation() {
                 <td colspan="6"
                     class="text-center text-warning">
 
-                    Sin resultados para la consulta
+                    Ingresa ubicación o UPC
 
                 </td>
 
@@ -88,30 +56,101 @@ function searchLocation() {
 
     }
 
-    // MOSTRAR RESULTADOS
+    // INVENTARIO
 
-    filtered.forEach(item => {
+    const inventory =
+        await getInventory();
 
-        resultsBody.innerHTML += `
+    console.log(
+        'Registros:',
+        inventory.length
+    );
+
+    // FILTRAR
+
+    const filtered =
+        inventory.filter(item =>
+
+            item.ubicacion
+                .includes(search)
+
+            ||
+
+            item.upc
+                .includes(search)
+
+        );
+
+    // SIN RESULTADOS
+
+    if (filtered.length === 0) {
+
+        resultsBody.innerHTML = `
 
             <tr>
 
-                <td>${item.ubicacion}</td>
+                <td colspan="6"
+                    class="text-center text-danger">
 
-                <td>${item.upc}</td>
+                    Sin resultados
 
-                <td>${item.descripcion}</td>
-
-                <td>${item.existencias}</td>
-
-                <td>${item.reservado}</td>
-
-                <td>${item.disponible}</td>
+                </td>
 
             </tr>
 
         `;
 
-    });
+        return;
+
+    }
+
+    // MOSTRAR
+
+    filtered
+        .slice(0, 500)
+        .forEach(item => {
+
+            resultsBody.innerHTML += `
+
+                <tr>
+
+                    <td>${item.ubicacion}</td>
+
+                    <td>${item.upc}</td>
+
+                    <td>${item.descripcion}</td>
+
+                    <td>${item.existencias}</td>
+
+                    <td>${item.reservado}</td>
+
+                    <td>${item.disponible}</td>
+
+                </tr>
+
+            `;
+
+        });
 
 }
+
+// =====================================
+// ENTER
+// =====================================
+
+document
+    .getElementById(
+        'locationInput'
+    )
+    .addEventListener(
+        'keypress',
+        function (e) {
+
+            if (e.key === 'Enter') {
+
+                searchLocation();
+
+            }
+
+        }
+    );

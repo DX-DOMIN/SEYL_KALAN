@@ -1,32 +1,51 @@
-// =========================================
-// DATATABLE
-// =========================================
+// =====================================
+// TABLA
+// =====================================
 
-let table = new DataTable('#inventoryTable');
+let table =
+    new DataTable(
+        '#inventoryTable'
+    );
 
-// =========================================
+// =====================================
+// INICIAR DB
+// =====================================
+
+window.onload = async function(){
+
+    await initDB();
+
+};
+
+// =====================================
 // INPUT FILE
-// =========================================
+// =====================================
 
 document
     .getElementById('fileInput')
-    .addEventListener('change', handleFile);
+    .addEventListener(
+        'change',
+        handleFile
+    );
 
-// =========================================
+// =====================================
 // LEER ARCHIVO
-// =========================================
+// =====================================
 
 function handleFile(event) {
 
-    const file = event.target.files[0];
+    const file =
+        event.target.files[0];
 
     if (!file) return;
 
-    const reader = new FileReader();
+    const reader =
+        new FileReader();
 
     reader.onload = function (e) {
 
-        const content = e.target.result;
+        const content =
+            e.target.result;
 
         processData(content);
 
@@ -36,135 +55,133 @@ function handleFile(event) {
 
 }
 
-// =========================================
-// PROCESAR INVENTARIO
-// =========================================
+// =====================================
+// PROCESAR DATA
+// =====================================
 
-function processData(data) {
+async function processData(data) {
 
     // LIMPIAR TABLA
 
     table.clear();
 
-    // DIVIDIR LÍNEAS
+    // LÍNEAS
 
-    const lines = data.split('\n');
+    const lines =
+        data.split('\n');
 
-    // ARRAY INVENTARIO
+    // INVENTARIO
 
     const inventory = [];
 
-    // RECORRER ARCHIVO
+    // RECORRER
 
     lines.forEach((line, index) => {
 
-        // SALTAR HEADER
+        // HEADER
 
         if (index === 0) return;
 
-        // LIMPIAR SALTOS OCULTOS
-
-        line = line.replace(/\r/g, '');
-
-        // VALIDAR LINEA VACÍA
-
-        if (!line.trim()) return;
-
         // COLUMNAS
 
-        const cols = line.split(',');
+        const cols =
+            line.split(',');
 
-        // VALIDAR COLUMNAS
+        // VALIDAR
 
         if (cols.length < 6) return;
 
-        // CREAR ITEM LIMPIO
+        // ITEM
 
         const item = {
 
-            ubicacion: cols[0]
-                ?.replace(/\s+/g, '')
-                .trim()
-                .toUpperCase(),
+            ubicacion:
+                cols[0]
+                    ?.trim()
+                    .toUpperCase(),
 
-            upc: cols[1]
-                ?.trim(),
+            upc:
+                cols[1]
+                    ?.trim(),
 
-            descripcion: cols[2]
-                ?.trim(),
+            descripcion:
+                cols[2]
+                    ?.trim(),
 
-            existencias: cols[3]
-                ?.trim(),
+            existencias:
+                cols[3]
+                    ?.trim(),
 
-            reservado: cols[4]
-                ?.trim(),
+            reservado:
+                cols[4]
+                    ?.trim(),
 
-            disponible: cols[5]
-                ?.trim()
+            disponible:
+                cols[5]
+                    ?.trim()
 
         };
 
-        // VALIDAR DATOS OBLIGATORIOS
-
-        if (
-            !item.ubicacion ||
-            !item.upc
-        ) return;
-
-        // AGREGAR A INVENTARIO
-
         inventory.push(item);
-
-        // RENDER TABLA
-
-        table.row.add([
-
-            item.ubicacion,
-
-            item.upc,
-
-            item.descripcion,
-
-            item.existencias,
-
-            item.reservado,
-
-            item.disponible
-
-        ]);
 
     });
 
-    // DIBUJAR TABLA
+    // =====================================
+    // GUARDAR INDEXEDDB
+    // =====================================
 
-    table.draw();
+    try {
 
-    // GUARDAR INVENTARIO
+        await saveInventory(
+            inventory
+        );
 
-    localStorage.setItem(
+        // MOSTRAR SOLO 500
 
-        'inventoryData',
+        inventory
+            .slice(0,500)
+            .forEach(item => {
 
-        JSON.stringify(inventory)
+                table.row.add([
 
-    );
+                    item.ubicacion,
 
-    // LOG DEBUG
+                    item.upc,
 
-    console.log(
+                    item.descripcion,
 
-        'Inventario cargado:',
-        inventory.length,
-        'registros'
+                    item.existencias,
 
-    );
+                    item.reservado,
 
-    // ALERTA
+                    item.disponible
 
-    alert(
+                ]);
 
-        `Inventario cargado correctamente\n\n${inventory.length} registros procesados`
+            });
 
-    );
+        table.draw();
+
+        alert(
+
+            `Inventario cargado: ${inventory.length} registros`
+
+        );
+
+        console.log(
+            'Inventario guardado IndexedDB'
+        );
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        alert(
+            'Error guardando inventario'
+        );
+
+    }
 
 }

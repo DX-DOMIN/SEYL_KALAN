@@ -1,10 +1,14 @@
+// =====================================
 // DATOS
+// =====================================
 
 const rawPhysical = JSON.parse(
     localStorage.getItem('physicalCount')
 ) || [];
 
+// =====================================
 // NORMALIZAR DATOS
+// =====================================
 
 const physical = rawPhysical.map(item => ({
 
@@ -23,15 +27,17 @@ const physical = rawPhysical.map(item => ({
     fisico:
         item.fisico || 0,
 
-    anomaly:
-        item.anomaly || false,
+    fecha:
+        item.fecha || '',
 
-    ubicacionCorrecta:
-        item.ubicacionCorrecta || 'OK'
+    anomaly:
+        item.anomaly || false
 
 }));
 
+// =====================================
 // EXPORTAR EXCEL
+// =====================================
 
 function exportExcel() {
 
@@ -47,10 +53,36 @@ function exportExcel() {
 
     }
 
+    // CREAR DATOS LIMPIOS
+
+    const exportData = physical.map(item => ({
+
+        Ubicacion:
+            item.location,
+
+        UPC:
+            item.upc,
+
+        Descripcion:
+            item.descripcion,
+
+        Sistema:
+            item.sistema,
+
+        Fisico:
+            item.fisico,
+
+        Fecha_Conteo:
+            item.fecha
+
+    }));
+
     // CREAR HOJA
 
     const worksheet =
-        XLSX.utils.json_to_sheet(physical);
+        XLSX.utils.json_to_sheet(
+            exportData
+        );
 
     // CREAR LIBRO
 
@@ -79,7 +111,9 @@ function exportExcel() {
 
 }
 
+// =====================================
 // EXPORTAR TXT
+// =====================================
 
 function exportTXT() {
 
@@ -103,7 +137,7 @@ function exportTXT() {
 
         text +=
 
-`${item.location} | ${item.upc} | ${item.descripcion} | Sistema:${item.sistema} | Fisico:${item.fisico}
+`${item.location} | ${item.upc} | ${item.descripcion} | Sistema:${item.sistema} | Fisico:${item.fisico} | Fecha:${item.fecha}
 
 `;
 
@@ -136,15 +170,16 @@ function exportTXT() {
 
 }
 
+// =====================================
 // EXPORTAR AVANCE UBICACIONES
+// =====================================
 
-function exportProgressExcel() {
+async function exportProgressExcel() {
 
     // INVENTARIO ERP
 
-    const inventory = JSON.parse(
-        localStorage.getItem('inventoryData')
-    ) || [];
+    const inventory =
+        await getInventory();
 
     // CONTEO FÍSICO
 
