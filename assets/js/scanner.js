@@ -1,49 +1,108 @@
+// =====================================
 // INVENTARIO ERP
+// =====================================
 
-const inventory = JSON.parse(
-    localStorage.getItem('inventoryData')
-) || [];
+// =====================================
+// INVENTARIO GLOBAL
+// =====================================
 
+let inventory = [];
+
+// =====================================
+// CARGAR INVENTARIO DB
+// =====================================
+
+window.onload = async function () {
+
+    // INICIAR DB
+
+    await initDB();
+
+    // OBTENER INVENTARIO
+
+    inventory = await getInventory();
+
+    console.log(
+        'Inventario cargado:',
+        inventory.length
+    );
+
+};
+
+// =====================================
 // CONTEO FÍSICO
+// =====================================
 
 let physicalCount = JSON.parse(
-    localStorage.getItem('physicalCount')
+
+    localStorage.getItem(
+        'physicalCount'
+    )
+
 ) || [];
 
-// INPUTS
+
+// =====================================
+// INPUT SCANNER
+// =====================================
 
 const scannerInput =
-    document.getElementById('scannerInput');
+    document.getElementById(
+        'scannerInput'
+    );
 
+
+// =====================================
 // EVENTO ESCANEO
+// =====================================
 
 scannerInput.addEventListener(
-    'keypress',
+
+    'keydown',
+
     function (e) {
 
         if (e.key === 'Enter') {
+
+            e.preventDefault();
 
             processScan();
 
         }
 
     }
+
 );
 
+
+// =====================================
 // PROCESAR ESCANEO
+// =====================================
 
 function processScan() {
 
+    // UBICACIÓN
+
     const location = document
-        .getElementById('locationInput')
+
+        .getElementById(
+            'locationInput'
+        )
+
         .value
+
         .trim()
+
         .toUpperCase();
 
-    const upc =
-        scannerInput.value.trim();
+    // UPC
 
-    // NUEVO → CANTIDAD CAPTURADA
+    const upc =
+
+        scannerInput.value
+        .trim();
+
+    // CANTIDAD
 
     const qty = parseInt(
 
@@ -53,7 +112,9 @@ function processScan() {
 
     ) || 1;
 
-    // VALIDACIONES
+    // =====================================
+    // VALIDAR
+    // =====================================
 
     if (!location || !upc) {
 
@@ -65,22 +126,30 @@ function processScan() {
 
     }
 
-    // BUSCAR EN UBICACIÓN
+    // =====================================
+    // BUSCAR EN INVENTARIO
+    // =====================================
 
     let systemItem = inventory.find(item =>
 
-        item.ubicacion.toUpperCase() ===
+        String(item.ubicacion)
+            .toUpperCase() ===
         location &&
 
-        item.upc === upc
+        String(item.upc) ===
+        String(upc)
 
     );
 
+    // =====================================
     // ANOMALÍA
+    // =====================================
 
     let anomaly = false;
 
-    // SI NO EXISTE EN ESA UBICACIÓN
+    // =====================================
+    // NO EXISTE EN UBICACIÓN
+    // =====================================
 
     if (!systemItem) {
 
@@ -90,7 +159,10 @@ function processScan() {
 
         const anotherLocation =
             inventory.find(item =>
-                item.upc === upc
+
+                String(item.upc) ===
+                String(upc)
+
             );
 
         // EXISTE EN OTRA UBICACIÓN
@@ -136,71 +208,106 @@ function processScan() {
 
     }
 
+    // =====================================
     // VALIDAR EXISTENTE
+    // =====================================
 
     let existing =
         physicalCount.find(item =>
 
-            item.upc === upc &&
+            String(item.upc) ===
+            String(upc)
 
-            item.location === location
+            &&
+
+            String(item.location) ===
+            String(location)
 
         );
 
+    // =====================================
     // SUMAR EXISTENTE
+    // =====================================
 
     if (existing) {
 
-        existing.fisico += qty;
+        existing.fisico =
 
-existing.fecha =
-    new Date().toLocaleString();
+            parseInt(existing.fisico || 0)
+
+            +
+
+            qty;
+
+        existing.fecha =
+
+            new Date()
+            .toLocaleString();
 
     }
 
+    // =====================================
     // NUEVO REGISTRO
+    // =====================================
 
     else {
 
         physicalCount.unshift({
 
             location: location,
-        
+
             upc:
                 systemItem.upc,
-        
+
             descripcion:
                 systemItem.descripcion,
-        
+
             sistema:
                 parseInt(
                     systemItem.existencias
-                ),
-        
-            fisico: qty,
-        
+                ) || 0,
+
+            fisico:
+                qty,
+
             fecha:
-                new Date().toLocaleString(),
-        
-            anomaly: anomaly,
-        
+                new Date()
+                .toLocaleString(),
+
+            anomaly:
+                anomaly,
+
             ubicacionCorrecta:
-                systemItem.ubicacionCorrecta
-                || 'OK'
-        
+
+                systemItem
+                .ubicacionCorrecta
+
+                ||
+
+                'OK'
+
         });
 
     }
 
+    // =====================================
     // RENDER
+    // =====================================
 
     renderTable();
 
-    // MOVIMIENTO
+    // =====================================
+    // GUARDAR MOVIMIENTO
+    // =====================================
 
-    saveMovement(location, upc);
+    saveMovement(
+        location,
+        upc
+    );
 
+    // =====================================
     // LIMPIAR INPUTS
+    // =====================================
 
     scannerInput.value = '';
 
@@ -208,11 +315,20 @@ existing.fecha =
         'qtyInput'
     ).value = 1;
 
-    scannerInput.focus();
+    // FOCUS
+
+    setTimeout(() => {
+
+        scannerInput.focus();
+
+    }, 10);
 
 }
 
+
+// =====================================
 // RENDER TABLA
+// =====================================
 
 function renderTable() {
 
@@ -223,20 +339,41 @@ function renderTable() {
 
     tbody.innerHTML = '';
 
+    // =====================================
+    // RECORRER
+    // =====================================
+
     physicalCount.forEach(item => {
 
+        // NORMALIZAR
+
+        const sistema =
+
+            parseInt(item.sistema)
+            || 0;
+
+        const fisico =
+
+            parseInt(item.fisico)
+            || 0;
+
         const diferencia =
-            item.fisico - item.sistema;
+
+            fisico - sistema;
+
+        // ESTADO
 
         let estado = '';
+
         let clase = '';
+
         let recomendacion = '';
 
+        // =====================================
         // OK
+        // =====================================
 
-        if (
-            item.fisico === item.sistema
-        ) {
+        if (fisico === sistema) {
 
             estado = 'OK';
 
@@ -247,14 +384,13 @@ function renderTable() {
 
         }
 
-        // DIFERENCIA NEGATIVA
+        // =====================================
+        // FALTANTE
+        // =====================================
 
-        else if (
-            item.fisico < item.sistema
-        ) {
+        else if (fisico < sistema) {
 
-            estado =
-                'DIFERENCIA NEGATIVA';
+            estado = 'FALTANTE';
 
             clase = 'danger';
 
@@ -263,12 +399,13 @@ function renderTable() {
 
         }
 
-        // EXCESO FÍSICO
+        // =====================================
+        // SOBRANTE
+        // =====================================
 
         else {
 
-            estado =
-                'EXCESO FÍSICO';
+            estado = 'SOBRANTE';
 
             clase = 'warning';
 
@@ -277,7 +414,9 @@ function renderTable() {
 
         }
 
+        // =====================================
         // ANOMALÍA
+        // =====================================
 
         if (item.anomaly) {
 
@@ -287,11 +426,14 @@ function renderTable() {
             clase = 'info';
 
             recomendacion =
+
                 `Mover a ${item.ubicacionCorrecta}`;
 
         }
 
+        // =====================================
         // RENDER HTML
+        // =====================================
 
         tbody.innerHTML += `
 
@@ -303,9 +445,9 @@ function renderTable() {
 
                 <td>${item.descripcion}</td>
 
-                <td>${item.sistema}</td>
+                <td>${sistema}</td>
 
-                <td>${item.fisico}</td>
+                <td>${fisico}</td>
 
                 <td>${diferencia}</td>
 
@@ -325,23 +467,31 @@ function renderTable() {
 
     });
 
-    // GUARDAR CONTEO
+    // =====================================
+    // GUARDAR
+    // =====================================
 
     localStorage.setItem(
 
         'physicalCount',
 
-        JSON.stringify(physicalCount)
+        JSON.stringify(
+            physicalCount
+        )
 
     );
 
 }
 
+
 // =====================================
 // GUARDAR MOVIMIENTO
 // =====================================
 
-function saveMovement(location, upc) {
+function saveMovement(
+    location,
+    upc
+) {
 
     const movements = JSON.parse(
 
@@ -351,19 +501,23 @@ function saveMovement(location, upc) {
 
     ) || [];
 
-    // FECHA ACTUAL
+    // FECHA
 
     const now = new Date();
 
     const formattedDate =
 
-        now.toLocaleDateString() +
+        now.toLocaleDateString()
 
-        ' ' +
+        +
+
+        ' '
+
+        +
 
         now.toLocaleTimeString();
 
-    // INSERTAR AL INICIO
+    // INSERTAR
 
     movements.unshift({
 
@@ -375,7 +529,7 @@ function saveMovement(location, upc) {
 
     });
 
-    // LIMITE MOVIMIENTOS
+    // LIMITE
 
     if (movements.length > 100) {
 
@@ -389,12 +543,17 @@ function saveMovement(location, upc) {
 
         'movements',
 
-        JSON.stringify(movements)
+        JSON.stringify(
+            movements
+        )
 
     );
 
 }
 
+
+// =====================================
 // RENDER INICIAL
+// =====================================
 
 renderTable();

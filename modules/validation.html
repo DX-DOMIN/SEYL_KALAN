@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Validación Operativa - SEYL_KALAN
+    </title>
+
+    <link rel="icon"
+        type="image/png"
+        href="../assets/img/logo.png">
+
+    <!-- Bootstrap -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <!-- Icons -->
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- CSS -->
+
+    <link rel="stylesheet"
+        href="../assets/css/style.css">
+
+</head>
+
+<body class="dashboard-body">
+
+    <!-- SIDEBAR -->
+
+    <div class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <i class="fa-solid fa-boxes-stacked"></i>
+
+            <span>SEYL_KALAN</span>
+
+        </div>
+
+        <ul>
+
+            <li onclick="window.location.href='dashboard.html'">
+
+                <i class="fa-solid fa-chart-line"></i>
+                Dashboard
+
+            </li>
+
+            <li onclick="window.location.href='inventory.html'">
+
+                <i class="fa-solid fa-file-import"></i>
+                Carga TXT/CSV
+
+            </li>
+
+            <li onclick="window.location.href='locations.html'">
+
+                <i class="fa-solid fa-location-dot"></i>
+                Consulta Inventario
+
+            </li>
+
+            <li onclick="window.location.href='scanner.html'">
+
+                <i class="fa-solid fa-barcode"></i>
+                Barrido Físico
+
+            </li>
+            
+            <li class="active">
+
+                <i class="fa-solid fa-clipboard-check"></i>
+                Validación Operativa
+
+            </li>
+
+            <li onclick="window.location.href='reports.html'">
+
+                <i class="fa-solid fa-file-export"></i>
+                Reportes
+
+            </li>
+
+        </ul>
+
+    </div>
+
+    <!-- MAIN -->
+
+    <div class="main-content">
+
+        <!-- TOPBAR -->
+
+        <div class="topbar">
+
+            <h2>
+                Validación Operativa
+            </h2>
+
+            <div class="user-box">
+                Validación de Surtido
+            </div>
+
+        </div>
+
+        <!-- CARGA TXT -->
+
+        <div class="upload-card mt-4">
+
+            <div class="upload-icon">
+
+                <i class="fa-solid fa-file-arrow-up"></i>
+
+            </div>
+
+            <h3>
+                Cargar Archivo Reservado
+            </h3>
+
+            <p>
+                Cargar TXT exportado desde ERP
+            </p>
+
+            <input
+                type="file"
+                id="reservedFile"
+                class="form-control mt-3"
+                accept=".txt,.csv">
+
+        </div>
+
+        <!-- SELECTOR RUTA -->
+
+        <div class="search-card mt-4">
+
+            <div class="row align-items-end">
+
+                <div class="col-md-8">
+
+                    <label>
+                        Seleccionar Ruta
+                    </label>
+
+                    <input
+    type="text"
+    id="routeInput"
+    class="form-control custom-input"
+    placeholder="Ingresar Ruta">
+
+                </div>
+
+                <div class="col-md-4">
+
+                    <button
+                        class="btn search-btn w-100"
+                        onclick="loadRoute()">
+
+                        <i class="fa-solid fa-truck-fast"></i>
+                        Cargar Ruta
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- DASHBOARD -->
+
+        <div class="row g-4 mt-2">
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card">
+
+                    <h5>
+                        Ruta
+                    </h5>
+
+                    <h2 id="routeNumber" class="route-number">
+                        -
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card success">
+
+                    <h5>
+                        Piezas Esperadas
+                    </h5>
+
+                    <h2 id="expectedPieces">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card">
+
+                    <h5>
+                        Escaneadas
+                    </h5>
+
+                    <h2 id="scannedPieces">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card success">
+
+                    <h5>
+                        OK
+                    </h5>
+
+                    <h2 id="okPieces">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card danger">
+
+                    <h5>
+                        Faltantes
+                    </h5>
+
+                    <h2 id="missingPieces">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <div class="dashboard-card warning">
+
+                    <h5>
+                        Exceso
+                    </h5>
+
+                    <h2 id="excessPieces">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- FORMULARIO -->
+
+        <div class="scanner-card mt-4">
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+
+                    <label>
+                        Caja
+                    </label>
+
+                    <input
+                        type="text"
+                        id="boxInput"
+                        class="form-control custom-input"
+                        placeholder="Número de Caja">
+
+                </div>
+
+                <div class="col-md-9">
+
+                    <label>
+                        Escanear UPC
+                    </label>
+
+                    <input
+                        type="text"
+                        id="validationUPC"
+                        class="form-control custom-input"
+                        placeholder="Escanear UPC">
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TABLA VALIDACIÓN -->
+
+        <div class="table-section mt-5">
+
+            <div class="table-header">
+
+                <h4>
+                    Validación en Tiempo Real
+                </h4>
+
+            </div>
+
+            <table class="table table-dark table-hover">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Caja</th>
+                        <th>UPC</th>
+                        <th>Descripción</th>
+                        <th>Esperado</th>
+                        <th>Escaneado</th>
+                        <th>Diferencia</th>
+                        <th>Estado</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="validationTableBody">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- EXPORTACIONES -->
+
+        <div class="row mt-4">
+
+            <div class="col-md-6">
+
+                <button
+                    class="btn search-btn w-100"
+                    onclick="exportValidationExcel()">
+
+                    <i class="fa-solid fa-file-excel"></i>
+                    Exportar Excel
+
+                </button>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <button
+                    class="btn btn-danger w-100"
+                    onclick="exportValidationPDF()">
+
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Exportar PDF
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- XLSX -->
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- JSPDF -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- JS -->
+
+    <script src="../assets/js/validation.js"></script>
+
+</body>
+
+</html>

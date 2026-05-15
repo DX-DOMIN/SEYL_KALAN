@@ -53,14 +53,27 @@
                 Consulta de Inventario
             </li>
 
-            <li>
+            <li onclick="window.location.href='scanner.html'">
+
                 <i class="fa-solid fa-barcode"></i>
+            
                 Barrido Físico
+            
             </li>
 
-            <li>
+            <li onclick="window.location.href='validation.html'">
+
+                <i class="fa-solid fa-clipboard-check"></i>
+                Validación Operativa
+            
+            </li>
+
+            <li onclick="window.location.href='analytics.html'">
+
                 <i class="fa-solid fa-magnifying-glass-chart"></i>
+            
                 Análisis
+            
             </li>
 
             <li onclick="window.location.href='reports.html'">
@@ -166,6 +179,7 @@
 
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="../assets/js/database.js"></script>
     <script src="../assets/js/inventory.js"></script>
 

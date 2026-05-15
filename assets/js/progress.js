@@ -1,7 +1,7 @@
 // INVENTARIO ERP
 
 const inventory = JSON.parse(
-    localStorage.getItem('inventoryData')
+    localStorage.getItem('indexDB')
 ) || [];
 
 // CONTEO FÍSICO

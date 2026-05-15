@@ -937,3 +937,17 @@ label {
     }
 
 }
+
+/* RUTA VALIDACION */
+
+.route-number{
+
+    font-size: 28px !important;
+
+    word-break: break-word;
+
+    overflow-wrap: break-word;
+
+    line-height: 1.2;
+
+}

@@ -6,9 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // INVENTARIO
 
-    const inventory = JSON.parse(
-        localStorage.getItem('inventoryData')
-    ) || [];
+    window.onload = async function () {
+
+        const inventory = await getInventory();
+    
+        console.log(inventory.length);
+    
+    };
 
     // CONTEO FÍSICO
 

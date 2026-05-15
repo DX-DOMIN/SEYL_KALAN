@@ -1,186 +1,309 @@
+let table;
+
+// =====================================
+// INICIAR
+// =====================================
+
+document.addEventListener(
+
+    'DOMContentLoaded',
+
+    async () => {
+
+        try {
+
+            // INICIAR DATABASE
+
+            await initDB();
+
+            // TABLA
+
+            initializeTable();
+
+            // INPUT FILE
+
+            initializeFileInput();
+
+            // CARGAR INVENTARIO
+
+            await loadExistingInventory();
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            alert(
+                'Error iniciando inventario'
+            );
+
+        }
+
+    }
+
+);
+
 // =====================================
 // TABLA
 // =====================================
 
-let table =
-    new DataTable(
-        '#inventoryTable'
-    );
+function initializeTable() {
+
+    table = $('#inventoryTable').DataTable({
+
+        destroy: true,
+
+        responsive: true,
+
+        pageLength: 50
+
+    });
+
+}
 
 // =====================================
-// INICIAR DB
+// FILE INPUT
 // =====================================
 
-window.onload = async function(){
+function initializeFileInput() {
 
-    await initDB();
+    const fileInput =
+        document.getElementById(
+            'fileInput'
+        );
 
-};
+    if (!fileInput) {
 
-// =====================================
-// INPUT FILE
-// =====================================
+        console.error(
+            'No existe fileInput'
+        );
 
-document
-    .getElementById('fileInput')
-    .addEventListener(
+        return;
+
+    }
+
+    fileInput.addEventListener(
+
         'change',
+
         handleFile
+
     );
+
+}
 
 // =====================================
 // LEER ARCHIVO
 // =====================================
 
-function handleFile(event) {
+async function handleFile(event) {
 
     const file =
         event.target.files[0];
 
-    if (!file) return;
+    if (!file) {
+
+        return;
+
+    }
 
     const reader =
         new FileReader();
 
-    reader.onload = function (e) {
+    reader.onload =
+        async (e) => {
 
-        const content =
-            e.target.result;
+            try {
 
-        processData(content);
+                const content =
+                    e.target.result;
 
-    };
+                await processData(
+                    content
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                alert(
+                    'Error leyendo archivo'
+                );
+
+            }
+
+        };
 
     reader.readAsText(file);
 
 }
 
 // =====================================
-// PROCESAR DATA
+// PROCESAR CSV/TXT
 // =====================================
 
 async function processData(data) {
 
-    // LIMPIAR TABLA
+    const parsed = Papa.parse(data, {
 
-    table.clear();
+        header: true,
 
-    // LÍNEAS
+        skipEmptyLines: true,
 
-    const lines =
-        data.split('\n');
+        transformHeader: header =>
 
-    // INVENTARIO
+            header
+                .trim()
+                .toLowerCase()
+
+    });
 
     const inventory = [];
 
-    // RECORRER
-
-    lines.forEach((line, index) => {
-
-        // HEADER
-
-        if (index === 0) return;
-
-        // COLUMNAS
-
-        const cols =
-            line.split(',');
-
-        // VALIDAR
-
-        if (cols.length < 6) return;
-
-        // ITEM
+    parsed.data.forEach(row => {
 
         const item = {
 
             ubicacion:
-                cols[0]
-                    ?.trim()
+                String(
+                    row.ubicacion || ''
+                )
+                    .trim()
                     .toUpperCase(),
 
             upc:
-                cols[1]
-                    ?.trim(),
+                String(
+                    row.upc || ''
+                )
+                    .trim(),
 
             descripcion:
-                cols[2]
-                    ?.trim(),
+                String(
+                    row.descripcion || ''
+                )
+                    .trim(),
 
             existencias:
-                cols[3]
-                    ?.trim(),
+                Number(
+                    row.existencias || 0
+                ),
 
             reservado:
-                cols[4]
-                    ?.trim(),
+                Number(
+                    row.reservado || 0
+                ),
 
             disponible:
-                cols[5]
-                    ?.trim()
+                Number(
+                    row.disponible || 0
+                )
 
         };
+
+        // VALIDAR
+
+        if (
+            !item.ubicacion ||
+            !item.upc
+        ) {
+
+            return;
+
+        }
 
         inventory.push(item);
 
     });
 
-    // =====================================
-    // GUARDAR INDEXEDDB
-    // =====================================
-
     try {
+
+        // GUARDAR INVENTARIO
 
         await saveInventory(
             inventory
         );
 
-        // MOSTRAR SOLO 500
+        // RENDER
 
-        inventory
-            .slice(0,500)
-            .forEach(item => {
-
-                table.row.add([
-
-                    item.ubicacion,
-
-                    item.upc,
-
-                    item.descripcion,
-
-                    item.existencias,
-
-                    item.reservado,
-
-                    item.disponible
-
-                ]);
-
-            });
-
-        table.draw();
+        renderInventory(
+            inventory
+        );
 
         alert(
 
-            `Inventario cargado: ${inventory.length} registros`
+            `Inventario cargado correctamente: ${inventory.length} registros`
 
-        );
-
-        console.log(
-            'Inventario guardado IndexedDB'
         );
 
     }
 
-    catch(error){
+    catch (error) {
 
         console.error(error);
 
         alert(
             'Error guardando inventario'
         );
+
+    }
+
+}
+
+// =====================================
+// RENDER TABLA
+// =====================================
+
+function renderInventory(inventory) {
+
+    table.clear();
+
+    inventory.forEach(item => {
+
+        table.row.add([
+
+            item.ubicacion,
+
+            item.upc,
+
+            item.descripcion,
+
+            item.existencias,
+
+            item.reservado,
+
+            item.disponible
+
+        ]);
+
+    });
+
+    table.draw();
+
+}
+
+// =====================================
+// CARGAR INVENTARIO EXISTENTE
+// =====================================
+
+async function loadExistingInventory() {
+
+    try {
+
+        const inventory =
+            await getInventory();
+
+        renderInventory(
+            inventory
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
 
     }
 
