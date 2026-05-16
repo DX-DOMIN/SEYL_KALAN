@@ -1,350 +1,436 @@
 // =====================================
-// DASHBOARD OPERATIVO
+// DASHBOARD SEYL_KALAN
 // =====================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener(
+    'DOMContentLoaded',
+    async () => {
 
-    // INVENTARIO
+        try {
 
-    window.onload = async function () {
+            // =====================================
+            // INIT DB
+            // =====================================
 
-        const inventory = await getInventory();
-    
-        console.log(inventory.length);
-    
-    };
+            await initDB();
 
-    // CONTEO FÍSICO
+            // =====================================
+            // USUARIO
+            // =====================================
 
-    const physical = JSON.parse(
-        localStorage.getItem('physicalCount')
-    ) || [];
+            const currentUser =
+                JSON.parse(
+                    localStorage.getItem(
+                        'currentUser'
+                    )
+                );
 
-    // MOVIMIENTOS
+            if (currentUser) {
 
-    const movements = JSON.parse(
-        localStorage.getItem('movements')
-    ) || [];
+                const userBox =
+                    document.getElementById(
+                        'currentUserBox'
+                    );
 
-    // KPIs
+                if (userBox) {
 
-    let ok = 0;
-    let diferencia = 0;
-    let exceso = 0;
+                    userBox.innerHTML = `
 
-    // ANALIZAR DATOS
+                        <i class="fa-solid fa-user"></i>
 
-    physical.forEach(item => {
+                        ${currentUser.name}
 
-        // ANOMALÍA
-
-        if (item.anomaly) {
-
-            diferencia++;
-            return;
-
-        }
-
-        // OK
-
-        if (item.fisico === item.sistema) {
-
-            ok++;
-
-        }
-
-        // DIFERENCIA
-
-        else if (item.fisico < item.sistema) {
-
-            diferencia++;
-
-        }
-
-        // EXCESO
-
-        else {
-
-            exceso++;
-
-        }
-
-    });
-
-    // TOTAL
-
-    const total =
-        ok + diferencia + exceso;
-
-    // EXACTITUD
-
-    const accuracy =
-        total > 0
-            ? ((ok / total) * 100).toFixed(1)
-            : 0;
-
-    // INSERTAR KPIS
-
-    document.getElementById(
-        'totalReviewed'
-    ).innerText = total;
-
-    document.getElementById(
-        'okProducts'
-    ).innerText = ok;
-
-    document.getElementById(
-        'differenceProducts'
-    ).innerText = diferencia;
-
-    document.getElementById(
-        'excessProducts'
-    ).innerText = exceso;
-
-    document.getElementById(
-        'accuracyPercent'
-    ).innerText = accuracy + '%';
-
-    // =====================================
-    // CHART
-    // =====================================
-
-    const ctx =
-        document.getElementById(
-            'inventoryChart'
-        );
-
-    new Chart(ctx, {
-
-        type: 'bar',
-
-        data: {
-
-            labels: [
-                'OK',
-                'Diferencias',
-                'Exceso'
-            ],
-
-            datasets: [{
-
-                label: 'Productos',
-
-                data: [
-                    ok,
-                    diferencia,
-                    exceso
-                ],
-
-                backgroundColor: [
-                    '#00ff99',
-                    '#ff4d4d',
-                    '#ffcc00'
-                ],
-
-                borderRadius: 10
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-
-                    display: false
-
-                }
-
-            },
-
-            scales: {
-
-                x: {
-
-                    ticks: {
-
-                        color: '#c9d1d9'
-
-                    },
-
-                    grid: {
-
-                        display: false
-
-                    }
-
-                },
-
-                y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-
-                        color: '#c9d1d9'
-
-                    },
-
-                    grid: {
-
-                        color:
-                            'rgba(255,255,255,.05)'
-
-                    }
-
+                    `;
                 }
 
             }
 
-        }
+            // =====================================
+            // INVENTARIO
+            // =====================================
 
-    });
+            const inventory =
+                await getInventory();
 
-    // =====================================
-    // TABLA MOVIMIENTOS
-    // =====================================
-
-    const table =
-        document.getElementById(
-            'movementsTable'
-        );
-
-    table.innerHTML = '';
-
-    // ÚLTIMOS 10
-
-    const latest =
-        movements.slice(0, 10);
-
-    // VACÍO
-
-    if (latest.length === 0) {
-
-        table.innerHTML = `
-
-            <tr>
-
-                <td colspan="4"
-                    class="text-center text-secondary">
-
-                    Sin movimientos registrados
-
-                </td>
-
-            </tr>
-
-        `;
-
-        return;
-
-    }
-
-    // RENDER
-
-    latest.forEach(move => {
-
-        // BUSCAR PRODUCTO
-
-        const product =
-            inventory.find(item =>
-
-                item.upc === move.upc
-
+            console.log(
+                'Inventario dashboard:',
+                inventory.length
             );
 
-        // DESCRIPCIÓN
+            // =====================================
+            // CONTEO
+            // =====================================
 
-        const descripcion =
-            product
-                ? product.descripcion
-                : 'UPC NO REGISTRADO';
+            const physical =
+                JSON.parse(
+                    localStorage.getItem(
+                        'physicalCount'
+                    )
+                ) || [];
 
-        // ESTADO
+            // =====================================
+            // MOVIMIENTOS
+            // =====================================
 
-        let estado = 'OK';
-        let badge = 'success';
+            const movements =
+                JSON.parse(
+                    localStorage.getItem(
+                        'movements'
+                    )
+                ) || [];
 
-        const scanned =
-            physical.find(item =>
-
-                item.upc === move.upc &&
-
-                item.location === move.location
-
+            console.log(
+                'Movimientos:',
+                movements.length
             );
 
-        if (scanned) {
+            // =====================================
+            // KPIS
+            // =====================================
 
-            if (scanned.anomaly) {
+            let ok = 0;
+            let diferencia = 0;
+            let exceso = 0;
 
-                estado = 'ANOMALÍA';
-                badge = 'warning';
+            physical.forEach(item => {
+
+                if (item.anomaly) {
+
+                    exceso++;
+                    return;
+                
+                }
+
+                if (item.fisico === item.sistema) {
+
+                    ok++;
+
+                }
+
+                else if (
+                    item.fisico < item.sistema
+                ) {
+
+                    diferencia++;
+
+                }
+
+                else {
+
+                    exceso++;
+
+                }
+
+            });
+
+            const total =
+                ok + diferencia + exceso;
+
+            const accuracy =
+                total > 0
+                    ? (
+                        (ok / total) * 100
+                    ).toFixed(1)
+                    : 0;
+
+            // =====================================
+            // HTML KPI
+            // =====================================
+
+            document.getElementById(
+                'totalReviewed'
+            ).innerText = total;
+
+            document.getElementById(
+                'okProducts'
+            ).innerText = ok;
+
+            document.getElementById(
+                'differenceProducts'
+            ).innerText = diferencia;
+
+            document.getElementById(
+                'excessProducts'
+            ).innerText = exceso;
+
+            document.getElementById(
+                'accuracyPercent'
+            ).innerText =
+                accuracy + '%';
+
+            // =====================================
+            // CHART
+            // =====================================
+
+            const ctx =
+                document.getElementById(
+                    'inventoryChart'
+                );
+
+            if (ctx) {
+
+                new Chart(ctx, {
+
+                    type: 'line',
+
+                    data: {
+
+                        labels:
+                            movements
+                                .slice(0, 10)
+                                .reverse()
+                                .map((move, index) =>
+
+                                    `Scan ${index + 1}`
+
+                                ),
+
+                        datasets: [{
+
+                            label:
+                                'Actividad',
+
+                            data:
+                                movements
+                                    .slice(0, 10)
+                                    .reverse()
+                                    .map((_, index) =>
+
+                                        index + 1
+
+                                    ),
+
+                            borderColor:
+                                '#00ff99',
+
+                            backgroundColor:
+                                'rgba(0,255,153,.15)',
+
+                            fill: true,
+
+                            tension: 0.4
+
+                        }]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        plugins: {
+
+                            legend: {
+
+                                labels: {
+
+                                    color: '#fff'
+
+                                }
+
+                            }
+
+                        },
+
+                        scales: {
+
+                            x: {
+
+                                ticks: {
+
+                                    color: '#cbd5e1'
+
+                                },
+
+                                grid: {
+
+                                    color:
+                                        'rgba(255,255,255,.05)'
+
+                                }
+
+                            },
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                ticks: {
+
+                                    color: '#cbd5e1'
+
+                                },
+
+                                grid: {
+
+                                    color:
+                                        'rgba(255,255,255,.05)'
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                });
 
             }
 
-            else if (
-                scanned.fisico < scanned.sistema
-            ) {
+            // =====================================
+            // TABLA
+            // =====================================
 
-                estado = 'FALTANTE';
-                badge = 'danger';
+            const table =
+                document.getElementById(
+                    'movementsTable'
+                );
+
+            table.innerHTML = '';
+
+            // =====================================
+            // SIN MOVIMIENTOS
+            // =====================================
+
+            if (movements.length === 0) {
+
+                table.innerHTML = `
+
+                    <tr>
+
+                        <td colspan="5"
+                            class="text-center text-secondary">
+
+                            Sin movimientos registrados
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
 
             }
 
-            else if (
-                scanned.fisico > scanned.sistema
-            ) {
+            // =====================================
+            // ÚLTIMOS 10
+            // =====================================
 
-                estado = 'EXCESO';
-                badge = 'warning';
+            movements
+                .slice(0, 10)
+                .forEach(move => {
 
-            }
+                    const product =
+                        inventory.find(item =>
+
+                            String(item.upc) ===
+                            String(move.upc)
+
+                        );
+
+                    const descripcion =
+                        product
+                            ? product.descripcion
+                            : 'UPC NO REGISTRADO';
+
+                    let estado = 'OK';
+                    let badge = 'success';
+
+                    const scanned =
+                        physical.find(item =>
+
+                            String(item.upc) ===
+                            String(move.upc)
+
+                            &&
+
+                            String(item.location) ===
+                            String(move.location)
+
+                        );
+
+                    if (scanned) {
+
+                        if (scanned.anomaly) {
+
+                            estado =
+                                'SOBRANTE';
+
+                            badge =
+                                'warning';
+
+                        }
+
+                        else if (
+                            scanned.fisico <
+                            scanned.sistema
+                        ) {
+
+                            estado =
+                                'FALTANTE';
+
+                            badge =
+                                'danger';
+
+                        }
+
+                        else if (
+                            scanned.fisico >
+                            scanned.sistema
+                        ) {
+
+                            estado =
+                                'EXCESO';
+
+                            badge =
+                                'warning';
+
+                        }
+
+                    }
+
+                    table.innerHTML += `
+
+                        <tr>
+
+                            <td>${move.location}</td>
+
+                            <td>${move.upc}</td>
+
+                            <td>${descripcion}</td>
+
+                            <td>
+
+                                <span class="badge bg-${badge}">
+
+                                    ${estado}
+
+                                </span>
+
+                            </td>
+
+                            <td>${move.date}</td>
+
+                        </tr>
+
+                    `;
+
+                });
 
         }
 
-        // HTML
+        catch(error) {
 
-        table.innerHTML += `
+            console.error(
+                'Dashboard error:',
+                error
+            );
 
-            <tr>
+        }
 
-                <td>${move.location}</td>
-
-                <td>${move.upc}</td>
-
-                <td>${descripcion}</td>
-
-                <td>
-
-                    <span class="badge bg-${badge}">
-
-                        ${estado}
-
-                    </span>
-
-                </td>
-
-                <td>
-
-    ${
-        move.date
-            ? move.date
-            : 'Sin fecha'
     }
-
-</td>
-
-            </tr>
-
-        `;
-
-    });
-
-});
+);

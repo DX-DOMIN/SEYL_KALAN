@@ -1,124 +1,92 @@
-// LOGIN
+// =====================================
+// LOGIN WMS
+// =====================================
 
 document
     .getElementById('loginForm')
+
     .addEventListener(
+
         'submit',
+
         function (e) {
 
             e.preventDefault();
 
-            // INPUTS
-
             const username =
                 document
-                .getElementById(
-                    'username'
-                )
-                .value
-                .trim();
+                    .getElementById('username')
+                    .value
+                    .trim();
 
             const password =
                 document
-                .getElementById(
-                    'password'
-                )
-                .value
-                .trim();
+                    .getElementById('password')
+                    .value
+                    .trim();
 
-            const operator =
-                document
-                .getElementById(
-                    'operatorInput'
-                )
-                .value
-                .trim();
-
-            // VALIDAR VACÍOS
-
-            if (
-                !username ||
-                !password ||
-                !operator
-            ) {
-
-                alert(
-                    'Completa todos los campos'
-                );
-
-                return;
-
-            }
-
+            // =====================================
             // USUARIOS
+            // =====================================
 
-            const users = [
+            const users = {
 
-                {
-                    username: 'admin',
-                    password: 'admin123'
+                contador1: {
+                    password: 'conteo101',
+                    name: 'Contador 1'
                 },
 
-                {
-                    username: 'contador1',
-                    password: 'conteo101'
+                contador2: {
+                    password: 'conteo202',
+                    name: 'Contador 2'
                 },
 
-                {
-                    username: 'contador2',
-                    password: 'conteo202'
+                contador3: {
+                    password: 'conteo303',
+                    name: 'Contador 3'
                 },
 
-                {
-                    username: 'contador3',
-                    password: 'conteo303'
+                supervisor: {
+                    password: 'admin404',
+                    name: 'Supervisor Operativo'
                 }
 
-            ];
+            };
 
-            // VALIDAR LOGIN
+            // =====================================
+            // VALIDAR
+            // =====================================
 
-            const validUser =
-                users.find(user =>
+            if (
 
-                    user.username === username
-                    &&
-                    user.password === password
+                users[username] &&
 
-                );
+                users[username].password === password
 
-            // LOGIN CORRECTO
+            ) {
 
-            if (validUser) {
+                // GUARDAR SESION
 
-                // GUARDAR OPERADOR
+                localStorage.setItem(
 
-                sessionStorage.setItem(
+                    'currentUser',
 
-                    'operator',
+                    JSON.stringify({
 
-                    operator
+                        username: username,
 
-                );
+                        name: users[username].name
 
-                // GUARDAR USUARIO
-
-                sessionStorage.setItem(
-
-                    'username',
-
-                    username
+                    })
 
                 );
 
-                // ENTRAR
+                // REDIRECCION
 
                 window.location.href =
                     'modules/dashboard.html';
 
             }
-
-            // LOGIN INCORRECTO
 
             else {
 
@@ -129,4 +97,5 @@ document
             }
 
         }
+
     );

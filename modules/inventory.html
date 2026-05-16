@@ -27,74 +27,7 @@
 
 <body class="dashboard-body">
 
-    <!-- SIDEBAR -->
-
-    <div class="sidebar">
-
-        <div class="sidebar-logo">
-            <i class="fa-solid fa-boxes-stacked"></i>
-            <span>SEYL_KALAN</span>
-        </div>
-
-        <ul>
-
-            <li onclick="window.location.href='dashboard.html'">
-                <i class="fa-solid fa-chart-line"></i>
-                Dashboard
-            </li>
-
-            <li class="active">
-                <i class="fa-solid fa-file-import"></i>
-                Carga TXT/CSV
-            </li>
-
-            <li onclick="window.location.href='locations.html'">
-                <i class="fa-solid fa-location-dot"></i>
-                Consulta de Inventario
-            </li>
-
-            <li onclick="window.location.href='scanner.html'">
-
-                <i class="fa-solid fa-barcode"></i>
-            
-                Barrido Físico
-            
-            </li>
-
-            <li onclick="window.location.href='validation.html'">
-
-                <i class="fa-solid fa-clipboard-check"></i>
-                Validación Operativa
-            
-            </li>
-
-            <li onclick="window.location.href='analytics.html'">
-
-                <i class="fa-solid fa-magnifying-glass-chart"></i>
-            
-                Análisis
-            
-            </li>
-
-            <li onclick="window.location.href='reports.html'">
-
-                <i class="fa-solid fa-file-export"></i>
-            
-                Reportes
-            
-            </li>
-
-            <li onclick="window.location.href='heatmap.html'">
-
-                <i class="fa-solid fa-fire"></i>
-            
-                Heatmap
-            
-            </li>
-
-        </ul>
-
-    </div>
+    <div id="sidebar-container"></div>
 
     <!-- MAIN -->
 
@@ -182,7 +115,7 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="../assets/js/database.js"></script>
     <script src="../assets/js/inventory.js"></script>
-
+    <script src="../assets/js/sidebar.js"></script>
 </body>
 
 </html>
