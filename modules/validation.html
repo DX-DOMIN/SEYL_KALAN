@@ -2,346 +2,520 @@
 <html lang="es">
 
 <head>
-
     <meta charset="UTF-8">
+    <title>KHAIRON - Validación por Case</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico">
 
-    <title>
-        Validación Operativa - SEYL_KALAN
-    </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
 
-    <link rel="icon"
-        type="image/png"
-        href="../assets/img/logo.png">
+    <style>
+        body.dashboard-body {
+            background: #f3f6f8;
+            color: #0f172a;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
 
-    <!-- Bootstrap -->
+        .main-content {
+            padding: 28px;
+        }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
+        .validation-page {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
 
-    <!-- Icons -->
+        .validation-hero {
+            background:
+                radial-gradient(circle at top left, rgba(18, 160, 111, 0.22), transparent 34%),
+                linear-gradient(135deg, #0f172a 0%, #111827 55%, #0f6b4f 100%);
+            border-radius: 28px;
+            padding: 28px;
+            color: #ffffff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+        }
 
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+        .validation-hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
 
-    <!-- CSS -->
+        .validation-hero h1 {
+            margin: 0;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
 
-    <link rel="stylesheet"
-        href="../assets/css/style.css">
+        .validation-hero p {
+            margin: 10px 0 0;
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 15px;
+        }
 
+        .page-kicker {
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .validation-logo {
+            max-width: 220px;
+            max-height: 90px;
+            object-fit: contain;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 12px;
+        }
+
+        .kh-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+        }
+
+        .validation-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .validation-kpi-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+            min-height: 140px;
+        }
+
+        .validation-kpi-card.success {
+            background: linear-gradient(180deg, #ffffff, #f0fdf4);
+            border-color: rgba(22, 163, 74, 0.25);
+        }
+
+        .validation-kpi-card.danger {
+            background: #fef2f2;
+            border-color: rgba(220, 38, 38, 0.28);
+        }
+
+        .validation-kpi-card.warning {
+            background: #fffbeb;
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        .validation-kpi-card.info {
+            background: #eff6ff;
+            border-color: rgba(37, 99, 235, 0.25);
+        }
+
+        .validation-kpi-label {
+            font-size: 12px;
+            font-weight: 900;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .validation-kpi-value {
+            margin-top: 10px;
+            font-size: 30px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.04em;
+            word-break: break-word;
+        }
+
+        .validation-kpi-note {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .kh-input {
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid #dbe3ee;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 15px;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .kh-input:focus {
+            outline: none;
+            border-color: #12a06f;
+            box-shadow: 0 0 0 4px rgba(18, 160, 111, 0.12);
+        }
+
+        .scanner-field {
+            width: 100%;
+            min-height: 58px;
+            border: 2px solid #dbe3ee;
+            border-radius: 18px;
+            padding: 16px 18px;
+            font-size: 20px;
+            font-weight: 800;
+            background: #ffffff;
+        }
+
+        .scanner-field:focus {
+            outline: none;
+            border-color: #12a06f;
+            box-shadow: 0 0 0 5px rgba(18, 160, 111, 0.14);
+        }
+
+        .kh-btn-primary {
+            min-height: 46px;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 18px;
+            background: linear-gradient(135deg, #0f6b4f, #12a06f);
+            color: white;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(15, 107, 79, 0.24);
+        }
+
+        .kh-btn-secondary {
+            min-height: 42px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 10px 16px;
+            background: white;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .validation-title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: #0f172a;
+        }
+
+        .validation-subtitle {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            background: #ffffff;
+        }
+
+        .kh-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .kh-table th {
+            background: #f8fafc;
+            color: #0f6b4f;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 14px 16px;
+            white-space: nowrap;
+        }
+
+        .kh-table td {
+            padding: 14px 16px;
+            border-top: 1px solid #eef2f7;
+            font-size: 14px;
+            color: #0f172a;
+            vertical-align: middle;
+        }
+
+        .kh-table tr:hover td {
+            background: #f8fafc;
+        }
+
+        @media (max-width: 1200px) {
+            .validation-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .validation-hero-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .validation-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body class="dashboard-body">
 
-    <div id="sidebar-container"></div>
-
-    <!-- MAIN -->
-
-    <div class="main-content">
-
-        <!-- TOPBAR -->
-
-        <div class="topbar">
-
-            <h2>
-                Validación Operativa
-            </h2>
-
-            <div class="user-box">
-                Validación de Surtido
-            </div>
-
-        </div>
-
-        <!-- CARGA TXT -->
-
-        <div class="upload-card mt-4">
-
-            <div class="upload-icon">
-
-                <i class="fa-solid fa-file-arrow-up"></i>
-
-            </div>
-
-            <h3>
-                Cargar Archivo Reservado
-            </h3>
-
-            <p>
-                Cargar TXT exportado desde ERP
-            </p>
-
-            <input
-                type="file"
-                id="reservedFile"
-                class="form-control mt-3"
-                accept=".txt,.csv">
-
-        </div>
-
-        <!-- SELECTOR RUTA -->
-
-        <div class="search-card mt-4">
-
-            <div class="row align-items-end">
-
-                <div class="col-md-8">
-
-                    <label>
-                        Seleccionar Ruta
-                    </label>
-
-                    <input
-    type="text"
-    id="routeInput"
-    class="form-control custom-input"
-    placeholder="Ingresar Ruta">
-
-                </div>
-
-                <div class="col-md-4">
-
-                    <button
-                        class="btn search-btn w-100"
-                        onclick="loadRoute()">
-
-                        <i class="fa-solid fa-truck-fast"></i>
-                        Cargar Ruta
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- DASHBOARD -->
-
-        <div class="row g-4 mt-2">
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card">
-
-                    <h5>
-                        Ruta
-                    </h5>
-
-                    <h2 id="routeNumber" class="route-number">
-                        -
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card success">
-
-                    <h5>
-                        Piezas Esperadas
-                    </h5>
-
-                    <h2 id="expectedPieces">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card">
-
-                    <h5>
-                        Escaneadas
-                    </h5>
-
-                    <h2 id="scannedPieces">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card success">
-
-                    <h5>
-                        OK
-                    </h5>
-
-                    <h2 id="okPieces">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card danger">
-
-                    <h5>
-                        Faltantes
-                    </h5>
-
-                    <h2 id="missingPieces">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-            <div class="col-md-2">
-
-                <div class="dashboard-card warning">
-
-                    <h5>
-                        Exceso
-                    </h5>
-
-                    <h2 id="excessPieces">
-                        0
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- FORMULARIO -->
-
-        <div class="scanner-card mt-4">
-
-            <div class="row g-3">
-
-                <div class="col-md-3">
-
-                    <label>
-                        Caja
-                    </label>
-
-                    <input
-                        type="text"
-                        id="boxInput"
-                        class="form-control custom-input"
-                        placeholder="Número de Caja">
-
-                </div>
-
-                <div class="col-md-9">
-
-                    <label>
-                        Escanear UPC
-                    </label>
-
-                    <input
-                        type="text"
-                        id="validationUPC"
-                        class="form-control custom-input"
-                        placeholder="Escanear UPC">
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- TABLA VALIDACIÓN -->
-
-        <div class="table-section mt-5">
-
-            <div class="table-header">
-
-                <h4>
-                    Validación en Tiempo Real
-                </h4>
+    <div class="app-shell">
+
+        <div id="sidebar-container"></div>
+
+        <main class="main-content">
+
+            <div class="validation-page">
+
+                <section class="validation-hero">
+                    <div class="validation-hero-content">
+
+                        <div>
+                            <div class="page-kicker">
+                                KHAIRON · WMS Platform
+                            </div>
+
+                            <h1>
+                                Validación por Case
+                            </h1>
+
+                            <p>
+                                Operador WMS: <strong>Global Logistics</strong> ·
+                                Cliente/Cuenta: <strong>Quiksilver</strong>
+                            </p>
+                        </div>
+
+                        <img
+                            src="../assets/img/logo-global-logistics.png"
+                            alt="Global Logistics"
+                            class="validation-logo"
+                        >
+
+                    </div>
+                </section>
+
+                <section class="kh-panel">
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-4">
+                            <label class="input-label" for="reservedFile">
+                                Archivo reservado
+                            </label>
+
+                            <input
+                                type="file"
+                                id="reservedFile"
+                                class="kh-input"
+                                accept=".txt,.csv,.tsv"
+                            >
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="input-label" for="routeInput">
+                                Ruta
+                            </label>
+
+                            <input
+                                type="text"
+                                id="routeInput"
+                                class="kh-input"
+                                placeholder="Ej. 6052023404"
+                            >
+                        </div>
+
+                        <div class="col-md-4">
+                            <button
+                                type="button"
+                                class="kh-btn-primary w-100"
+                                onclick="loadRoute()"
+                            >
+                                <i class="fa-solid fa-truck-fast"></i>
+                                Cargar Ruta
+                            </button>
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <section class="validation-kpi-grid">
+
+                    <div class="validation-kpi-card info">
+                        <div class="validation-kpi-label">Ruta activa</div>
+                        <div class="validation-kpi-value" id="routeNumber">-</div>
+                        <div class="validation-kpi-note">Ruta cargada para validación</div>
+                    </div>
+
+                    <div class="validation-kpi-card">
+                        <div class="validation-kpi-label">Esperado</div>
+                        <div class="validation-kpi-value" id="expectedPieces">0</div>
+                        <div class="validation-kpi-note">Piezas esperadas en ruta</div>
+                    </div>
+
+                    <div class="validation-kpi-card">
+                        <div class="validation-kpi-label">Escaneado</div>
+                        <div class="validation-kpi-value" id="scannedPieces">0</div>
+                        <div class="validation-kpi-note">Piezas capturadas</div>
+                    </div>
+
+                    <div class="validation-kpi-card success">
+                        <div class="validation-kpi-label">OK</div>
+                        <div class="validation-kpi-value" id="okPieces">0</div>
+                        <div class="validation-kpi-note">Piezas correctas</div>
+                    </div>
+
+                    <div class="validation-kpi-card danger">
+                        <div class="validation-kpi-label">Faltantes</div>
+                        <div class="validation-kpi-value" id="missingPieces">0</div>
+                        <div class="validation-kpi-note">Pendientes por validar</div>
+                    </div>
+
+                    <div class="validation-kpi-card warning">
+                        <div class="validation-kpi-label">Excedentes</div>
+                        <div class="validation-kpi-value" id="excessPieces">0</div>
+                        <div class="validation-kpi-note">Producto sobrante</div>
+                    </div>
+
+                    <div class="validation-kpi-card">
+                        <div class="validation-kpi-label">Cases</div>
+                        <div class="validation-kpi-value" id="caseCount">0</div>
+                        <div class="validation-kpi-note">Cases capturados</div>
+                    </div>
+
+                    <div class="validation-kpi-card">
+                        <div class="validation-kpi-label">Registros</div>
+                        <div class="validation-kpi-value" id="validatedTotal">0</div>
+                        <div class="validation-kpi-note">Líneas escaneadas</div>
+                    </div>
+
+                </section>
+
+                <section class="kh-panel">
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-4">
+                            <label class="input-label" for="caseInput">
+                                Case / Caja
+                            </label>
+
+                            <input
+                                type="text"
+                                id="caseInput"
+                                class="scanner-field"
+                                placeholder="Ej. 00003"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="input-label" for="validationUPC">
+                                Escaneo UPC
+                            </label>
+
+                            <input
+                                type="text"
+                                id="validationUPC"
+                                class="scanner-field"
+                                placeholder="Escanea o captura el UPC y presiona Enter"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <section class="kh-panel">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+
+                        <div>
+                            <h2 class="validation-title">
+                                Validación en tiempo real
+                            </h2>
+
+                            <div class="validation-subtitle">
+                                Los UPC repetidos se separan por case y acumulan solo dentro del mismo case.
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="kh-btn-secondary" onclick="exportValidationExcel()">
+                                <i class="fa-solid fa-file-excel"></i>
+                                Excel
+                            </button>
+
+                            <button class="kh-btn-primary" onclick="exportValidationPDF()">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                Generar PDF comercial
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <div class="table-wrap">
+                        <table class="kh-table">
+                            <thead>
+                                <tr>
+                                    <th>Case</th>
+                                    <th>UPC</th>
+                                    <th>Descripción</th>
+                                    <th>Esperado</th>
+                                    <th>Escaneado</th>
+                                    <th>Diferencia</th>
+                                    <th>Estado</th>
+                                    <th>Fecha/Hora</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="validationTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-secondary">
+                                        Carga una ruta para iniciar la validación
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
 
             </div>
 
-            <table class="table table-dark table-hover">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Caja</th>
-                        <th>UPC</th>
-                        <th>Descripción</th>
-                        <th>Esperado</th>
-                        <th>Escaneado</th>
-                        <th>Diferencia</th>
-                        <th>Estado</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody id="validationTableBody">
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-        <!-- EXPORTACIONES -->
-
-        <div class="row mt-4">
-
-            <div class="col-md-6">
-
-                <button
-                    class="btn search-btn w-100"
-                    onclick="exportValidationExcel()">
-
-                    <i class="fa-solid fa-file-excel"></i>
-                    Exportar Excel
-
-                </button>
-
-            </div>
-
-            <div class="col-md-6">
-
-                <button
-                    class="btn btn-danger w-100"
-                    onclick="exportValidationPDF()">
-
-                    <i class="fa-solid fa-file-pdf"></i>
-                    Exportar PDF
-
-                </button>
-
-            </div>
-
-        </div>
+        </main>
 
     </div>
 
-    <!-- XLSX -->
-
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-    <!-- JSPDF -->
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <!-- JS -->
-
-    <script src="../assets/js/validation.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="../assets/js/sidebar.js"></script>
+    <script src="../assets/js/validation.js"></script>
+
 </body>
 
 </html>

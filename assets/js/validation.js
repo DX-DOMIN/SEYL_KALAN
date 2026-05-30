@@ -1,1145 +1,1219 @@
 // =====================================
-// DATOS GLOBALES
+// VALIDACION POR CASE — KHAIRON
+// Formato productos_reservados:
+// 0 CLAVE / UPC
+// 1 DESCRIPCION
+// 5 CANTIDAD
+// 7 REFER. = RUTA
+// 10 COMENTARIOS = CLIENTE / DESTINO
 // =====================================
 
-let reservedData = JSON.parse(
+const VALIDATION_STORAGE_KEY = 'validationCaseRecords';
+const RESERVED_STORAGE_KEY = 'reservedData';
+const PROGRESS_STORAGE_KEY = 'validationProgress';
 
-    localStorage.getItem(
-        'reservedData'
-    )
-
-) || [];
-
-let activeRoute = [];
-
-let validationScans = JSON.parse(
-
-    localStorage.getItem(
-        'validationScans'
-    )
-
-) || [];
-
+let reservedData = JSON.parse(localStorage.getItem(RESERVED_STORAGE_KEY)) || [];
+let validationRecords = JSON.parse(localStorage.getItem(VALIDATION_STORAGE_KEY)) || [];
+let activeRouteName = '';
 
 // =====================================
-// CARGAR ARCHIVO
+// HELPERS
 // =====================================
 
-document
-    .getElementById('reservedFile')
-    .addEventListener(
-        'change',
-        handleReservedFile
+function normalizeValue(value) {
+    return String(value || '').trim().toUpperCase();
+}
+
+function normalizeNumber(value) {
+    const clean = String(value || '')
+        .replace(',', '.')
+        .replace(/[^\d.]/g, '');
+
+    return Number(clean) || 0;
+}
+
+function getRecordKey(routeName, caseId, upc) {
+    return [
+        normalizeValue(routeName),
+        normalizeValue(caseId),
+        normalizeValue(upc)
+    ].join('|');
+}
+
+function getExpectedKey(routeName, upc) {
+    return [
+        normalizeValue(routeName),
+        normalizeValue(upc)
+    ].join('|');
+}
+
+function getCaseInput() {
+    return document.getElementById('caseInput') ||
+        document.getElementById('boxInput');
+}
+
+function getCurrentRouteName() {
+    return activeRouteName || normalizeValue(
+        document.getElementById('routeInput')?.value
+    );
+}
+
+function getCurrentCaseId() {
+    const caseInput = getCaseInput();
+
+    return normalizeValue(
+        caseInput ? caseInput.value : ''
+    );
+}
+
+function escapeHTML(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function setTextIfExists(id, value) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.innerText = value;
+    }
+}
+
+function getStatusFromValues(expected, scanned) {
+    expected = Number(expected || 0);
+    scanned = Number(scanned || 0);
+
+    if (scanned < expected) return 'FALTANTE';
+    if (scanned > expected) return 'EXCEDENTE';
+
+    return 'OK';
+}
+
+function getBadgeClass(status) {
+    if (status === 'OK') return 'success';
+    if (status === 'EXCEDENTE') return 'warning';
+
+    return 'danger';
+}
+
+function saveValidationState() {
+    localStorage.setItem(
+        VALIDATION_STORAGE_KEY,
+        JSON.stringify(validationRecords)
     );
 
-function handleReservedFile(event) {
+    localStorage.setItem(
+        PROGRESS_STORAGE_KEY,
+        JSON.stringify({
+            route: activeRouteName,
+            validationRecords
+        })
+    );
+}
 
-    const file =
-        event.target.files[0];
+function getRouteCustomer(routeName) {
+    const item = reservedData.find(row =>
+        normalizeValue(row.ruta) === normalizeValue(routeName)
+    );
+
+    return item && item.comentarios
+        ? item.comentarios
+        : 'SIN CLIENTE';
+}
+
+// =====================================
+// CARGAR ARCHIVO RESERVADO
+// =====================================
+
+function splitReservedLine(line) {
+    if (line.includes('\t')) return line.split('\t');
+    if (line.includes(';')) return line.split(';');
+    if (line.includes(',')) return line.split(',');
+
+    return line.split(/\s{2,}/);
+}
+
+function parseReservedRow(cols) {
+    const upc = normalizeValue(cols[0]);
+    const descripcion = String(cols[1] || '').trim();
+    const cantidad = normalizeNumber(cols[5]);
+    const ruta = normalizeValue(cols[7]);
+    const comentarios = String(cols[10] || '').trim();
+
+    if (!upc || !cantidad || !ruta) {
+        return null;
+    }
+
+    return {
+        ruta,
+        upc,
+        descripcion: descripcion || 'SIN DESCRIPCION',
+        esperado: cantidad,
+        comentarios: comentarios || 'SIN CLIENTE'
+    };
+}
+
+function initReservedFileListener() {
+    const reservedFile = document.getElementById('reservedFile');
+
+    if (!reservedFile) return;
+
+    reservedFile.addEventListener('change', handleReservedFile);
+}
+
+function handleReservedFile(event) {
+    const file = event.target.files[0];
 
     if (!file) return;
 
-    const reader =
-        new FileReader();
+    const reader = new FileReader();
 
-    reader.onload = function(e){
-
-        processReservedData(
-            e.target.result
-        );
-
+    reader.onload = function(e) {
+        processReservedData(e.target.result);
     };
 
     reader.readAsText(file);
-
 }
 
-
-// =====================================
-// PROCESAR TXT
-// =====================================
-
 function processReservedData(data) {
+    const lines = data
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
 
-    const lines =
-        data.split('\n');
+    if (lines.length === 0) {
+        alert('El archivo reservado está vacío');
+        return;
+    }
 
     const grouped = {};
 
-    lines.forEach((line) => {
-
-        line = line.trim();
-
-        // IGNORAR
-
-        if (!line) return;
+    lines.forEach(line => {
+        const upperLine = line.toUpperCase();
 
         if (
-            line.includes('CLAVE') ||
-            line.includes('REFER.')
-        ) return;
-
-        // COLUMNAS
-
-        const cols =
-            line.split('\t');
-
-        // VALIDAR
-
-        if (cols.length < 8)
+            upperLine.includes('CLAVE') ||
+            upperLine.includes('REFER.') ||
+            upperLine.includes('REFERENCIA') ||
+            upperLine.includes('DESCRIP')
+        ) {
             return;
+        }
 
-        // DATOS
+        const cols = splitReservedLine(line);
 
-        const upc =
-            String(cols[0]).trim();
+        if (cols.length < 8) return;
 
-        const descripcion =
-            String(cols[1]).trim();
+        const parsed = parseReservedRow(cols);
 
-        const cantidad =
-            parseInt(cols[5]) || 0;
+        if (!parsed) return;
 
-        const ruta =
-            String(cols[7]).trim();
-
-        // VALIDAR
-
-        if (!upc || !ruta)
-            return;
-
-        // KEY
-
-        const key =
-            ruta + '_' + upc;
-
-        // NUEVO
+        const key = getExpectedKey(
+            parsed.ruta,
+            parsed.upc
+        );
 
         if (!grouped[key]) {
-
             grouped[key] = {
-
-                ruta: ruta,
-
-                upc: upc,
-
-                descripcion: descripcion,
-
-                esperado: cantidad,
-
-                escaneado: 0,
-
-                caja: ''
-
+                ruta: parsed.ruta,
+                upc: parsed.upc,
+                descripcion: parsed.descripcion,
+                esperado: Number(parsed.esperado || 0),
+                comentarios: parsed.comentarios || 'SIN CLIENTE'
             };
+        } else {
+            grouped[key].esperado += Number(parsed.esperado || 0);
 
+            if (
+                (!grouped[key].comentarios ||
+                    grouped[key].comentarios === 'SIN CLIENTE') &&
+                parsed.comentarios
+            ) {
+                grouped[key].comentarios = parsed.comentarios;
+            }
         }
-
-        // SUMAR
-
-        else {
-
-            grouped[key].esperado +=
-                cantidad;
-
-        }
-
     });
 
-    // FINAL
-
-    reservedData =
-        Object.values(grouped);
-
-    // GUARDAR
+    reservedData = Object.values(grouped);
 
     localStorage.setItem(
-
-        'reservedData',
-
+        RESERVED_STORAGE_KEY,
         JSON.stringify(reservedData)
-
     );
 
     alert(
-        'Reservado cargado correctamente'
+        `Reservado cargado correctamente: ${reservedData.length} UPC/ruta`
     );
 
+    updateDashboard();
+    renderValidationTable();
 }
 
+// =====================================
+// RUTA
+// =====================================
 
-// =====================================
-// CARGAR RUTA
-// =====================================
+function getExpectedItemsByRoute(routeName) {
+    return reservedData.filter(item =>
+        normalizeValue(item.ruta) === normalizeValue(routeName)
+    );
+}
 
 function loadRoute() {
+    const routeInput = document.getElementById('routeInput');
 
-    const route = document
-        .getElementById(
-            'routeInput'
-        )
-        .value
-        .trim();
-
-    // VALIDAR
-
-    if (!route) {
-
-        alert(
-            'Ingresa una ruta'
-        );
-
-        return;
-
-    }
-
-    // FILTRAR
-
-    activeRoute =
-        reservedData.filter(item =>
-
-            String(item.ruta) ===
-            String(route)
-
-        );
-
-    // VALIDAR
-
-    if (activeRoute.length === 0) {
-
-        alert(
-            'Ruta no encontrada'
-        );
-
-        return;
-
-    }
-
-    // ACTUALIZAR
-
-    updateDashboard();
-
-    renderValidationTable();
-
-    // GUARDAR
-
-    saveValidationProgress();
-
-    // FOCUS
-
-    setTimeout(() => {
-
-        document
-            .getElementById(
-                'validationUPC'
-            )
-            .focus();
-
-    }, 100);
-
-}
-
-
-// =====================================
-// EVENTO SCANNER
-// =====================================
-
-document
-    .getElementById(
-        'validationUPC'
-    )
-    .addEventListener(
-
-        'keydown',
-
-        function(e){
-
-            if (e.key === 'Enter') {
-
-                e.preventDefault();
-
-                processValidationScan();
-
-            }
-
-        }
-
+    const routeName = normalizeValue(
+        routeInput ? routeInput.value : ''
     );
 
+    if (!routeName) {
+        alert('Ingresa una ruta');
+        return;
+    }
+
+    const routeItems = getExpectedItemsByRoute(routeName);
+
+    if (routeItems.length === 0 && reservedData.length > 0) {
+        alert(
+            `La ruta ${routeName} no existe en el reservado cargado`
+        );
+
+        return;
+    }
+
+    activeRouteName = routeName;
+
+    setTextIfExists('routeNumber', activeRouteName);
+
+    saveValidationState();
+    updateDashboard();
+    renderValidationTable();
+
+    const caseInput = getCaseInput();
+
+    setTimeout(() => {
+        if (caseInput) caseInput.focus();
+    }, 100);
+}
+
+window.loadRoute = loadRoute;
 
 // =====================================
-// ESCANEAR
+// ESCANEO
 // =====================================
+
+function initValidationScanListener() {
+    const validationUPC = document.getElementById('validationUPC');
+
+    if (!validationUPC) return;
+
+    validationUPC.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            processValidationScan();
+        }
+    });
+}
+
+function getExpectedItemByRouteAndUPC(routeName, upc) {
+    return reservedData.find(item =>
+        normalizeValue(item.ruta) === normalizeValue(routeName) &&
+        normalizeValue(item.upc) === normalizeValue(upc)
+    );
+}
+
+function getScansByRoute(routeName) {
+    return validationRecords.filter(record =>
+        normalizeValue(record.routeName) === normalizeValue(routeName)
+    );
+}
+
+function getTotalScannedByUPC(routeName, upc) {
+    return getScansByRoute(routeName)
+        .filter(record =>
+            normalizeValue(record.upc) === normalizeValue(upc)
+        )
+        .reduce(
+            (total, record) =>
+                total + Number(record.cantidad || 0),
+            0
+        );
+}
 
 function processValidationScan() {
-
-    const boxInput =
-        document.getElementById(
-            'boxInput'
-        );
+    const routeName = getCurrentRouteName();
+    const caseId = getCurrentCaseId();
 
     const upcInput =
-        document.getElementById(
-            'validationUPC'
-        );
-
-    const box =
-        boxInput.value.trim();
+        document.getElementById('validationUPC');
 
     const upc =
-        upcInput.value.trim();
+        normalizeValue(upcInput ? upcInput.value : '');
 
-    // VALIDAR
-
-    if (!box || !upc) {
-
-        alert(
-            'Completa caja y UPC'
-        );
-
+    if (!routeName) {
+        alert('Primero carga una ruta');
         return;
-
     }
 
-    // BUSCAR
-
-    let item = activeRoute.find(item =>
-
-        String(item.upc) ===
-        String(upc)
-
-    );
-
-    // NO EXISTE
-
-    if (!item) {
-
-        alert(
-            'UPC NO ENCONTRADO'
-        );
-
-        upcInput.value = '';
-
-        upcInput.focus();
-
+    if (!caseId || !upc) {
+        alert('Completa case/caja y UPC');
         return;
-
     }
 
-    // SUMAR
+    const expectedItem =
+        getExpectedItemByRouteAndUPC(routeName, upc);
 
-    item.escaneado++;
+    if (!expectedItem && reservedData.length > 0) {
+        alert(
+            `UPC ${upc} no encontrado en la ruta ${routeName}`
+        );
 
-    item.caja = box;
+        if (upcInput) {
+            upcInput.value = '';
+            upcInput.focus();
+        }
 
-    // HISTORIAL
+        return;
+    }
 
-    validationScans.unshift({
+    const key =
+        getRecordKey(routeName, caseId, upc);
 
-        caja: box,
+    let record =
+        validationRecords.find(item => item.key === key);
 
-        upc: upc,
+    if (record) {
+        record.cantidad += 1;
+        record.fecha = new Date().toLocaleString();
 
-        fecha:
-            new Date()
+        if (expectedItem) {
+            record.descripcion = expectedItem.descripcion;
+            record.esperado = Number(expectedItem.esperado || 0);
+        }
+    } else {
+        validationRecords.unshift({
+            key,
+            routeName,
+            caseId,
+            upc,
+            descripcion: expectedItem
+                ? expectedItem.descripcion
+                : 'UPC SIN RESERVADO',
+            esperado: expectedItem
+                ? Number(expectedItem.esperado || 0)
+                : 0,
+            cantidad: 1,
+            fecha: new Date().toLocaleString()
+        });
+    }
 
-    });
-
-    // GUARDAR
-
-    localStorage.setItem(
-
-        'validationScans',
-
-        JSON.stringify(validationScans)
-
-    );
-
-    // GUARDAR AVANCE
-
-    saveValidationProgress();
-
-    // ACTUALIZAR UI
-
+    saveValidationState();
     updateDashboard();
-
     renderValidationTable();
 
-    // LIMPIAR
+    if (upcInput) {
+        upcInput.value = '';
 
-    upcInput.value = '';
-
-    // MANTENER FOCO
-
-    setTimeout(() => {
-
-        upcInput.focus();
-
-    }, 10);
-
+        setTimeout(() => {
+            upcInput.focus();
+        }, 10);
+    }
 }
 
+window.processValidationScan = processValidationScan;
 
 // =====================================
-// TABLA
+// TABLA Y DASHBOARD
 // =====================================
+
+function buildActiveRouteRows() {
+    const routeName = getCurrentRouteName();
+
+    if (!routeName) return [];
+
+    const expectedRows =
+        getExpectedItemsByRoute(routeName);
+
+    const scanRows =
+        getScansByRoute(routeName);
+
+    const expectedMap = {};
+    const rows = [];
+
+    expectedRows.forEach(item => {
+        const upc =
+            normalizeValue(item.upc);
+
+        expectedMap[upc] = {
+            routeName,
+            caseId: '-',
+            upc,
+            descripcion:
+                item.descripcion || 'SIN DESCRIPCION',
+            esperado:
+                Number(item.esperado || 0),
+            cantidad:
+                0,
+            fecha:
+                '',
+            comentarios:
+                item.comentarios || 'SIN CLIENTE'
+        };
+    });
+
+    scanRows.forEach(record => {
+        const upc =
+            normalizeValue(record.upc);
+
+        const expected =
+            expectedMap[upc];
+
+        rows.push({
+            routeName:
+                record.routeName,
+            caseId:
+                record.caseId,
+            upc:
+                record.upc,
+            descripcion:
+                record.descripcion ||
+                expected?.descripcion ||
+                'SIN DESCRIPCION',
+            esperado:
+                expected
+                    ? expected.esperado
+                    : Number(record.esperado || 0),
+            cantidad:
+                Number(record.cantidad || 0),
+            totalScannedUPC:
+                getTotalScannedByUPC(routeName, upc),
+            fecha:
+                record.fecha || '',
+            comentarios:
+                expected?.comentarios || 'SIN CLIENTE'
+        });
+    });
+
+    Object.values(expectedMap).forEach(expectedRow => {
+        const totalScannedUPC =
+            getTotalScannedByUPC(
+                routeName,
+                expectedRow.upc
+            );
+
+        if (totalScannedUPC === 0) {
+            rows.push({
+                ...expectedRow,
+                totalScannedUPC:
+                    0
+            });
+        }
+    });
+
+    return rows.sort((a, b) => {
+        if (a.caseId !== b.caseId) {
+            return String(a.caseId)
+                .localeCompare(String(b.caseId));
+        }
+
+        return String(a.upc)
+            .localeCompare(String(b.upc));
+    });
+}
+
+function getActiveRouteSummary() {
+    const routeName =
+        getCurrentRouteName();
+
+    const expectedRows =
+        getExpectedItemsByRoute(routeName);
+
+    const scanRows =
+        getScansByRoute(routeName);
+
+    const expectedByUPC = {};
+    const scannedByUPC = {};
+
+    expectedRows.forEach(item => {
+        const upc =
+            normalizeValue(item.upc);
+
+        expectedByUPC[upc] =
+            (expectedByUPC[upc] || 0) +
+            Number(item.esperado || 0);
+    });
+
+    scanRows.forEach(record => {
+        const upc =
+            normalizeValue(record.upc);
+
+        scannedByUPC[upc] =
+            (scannedByUPC[upc] || 0) +
+            Number(record.cantidad || 0);
+    });
+
+    const upcs = new Set([
+        ...Object.keys(expectedByUPC),
+        ...Object.keys(scannedByUPC)
+    ]);
+
+    let expected = 0;
+    let scanned = 0;
+    let ok = 0;
+    let missing = 0;
+    let excess = 0;
+
+    upcs.forEach(upc => {
+        const exp =
+            Number(expectedByUPC[upc] || 0);
+
+        const scn =
+            Number(scannedByUPC[upc] || 0);
+
+        expected += exp;
+        scanned += scn;
+
+        if (scn === exp) {
+            ok += scn;
+        }
+
+        if (scn < exp) {
+            missing += exp - scn;
+        }
+
+        if (scn > exp) {
+            ok += exp;
+            excess += scn - exp;
+        }
+    });
+
+    const cases = new Set();
+
+    scanRows.forEach(record => {
+        if (record.caseId) {
+            cases.add(record.caseId);
+        }
+    });
+
+    return {
+        cases:
+            cases.size,
+        expected,
+        scanned,
+        validated:
+            scanRows.length,
+        ok,
+        missing,
+        excess
+    };
+}
+
+function updateDashboard() {
+    const routeName =
+        getCurrentRouteName() || '-';
+
+    const summary =
+        getActiveRouteSummary();
+
+    setTextIfExists(
+        'routeNumber',
+        routeName
+    );
+
+    setTextIfExists(
+        'expectedPieces',
+        summary.expected
+    );
+
+    setTextIfExists(
+        'scannedPieces',
+        summary.scanned
+    );
+
+    setTextIfExists(
+        'okPieces',
+        summary.ok
+    );
+
+    setTextIfExists(
+        'missingPieces',
+        summary.missing
+    );
+
+    setTextIfExists(
+        'excessPieces',
+        summary.excess
+    );
+
+    setTextIfExists(
+        'caseCount',
+        summary.cases
+    );
+
+    setTextIfExists(
+        'validatedTotal',
+        summary.validated
+    );
+}
 
 function renderValidationTable() {
-
     const tbody =
-        document.getElementById(
-            'validationTableBody'
-        );
+        document.getElementById('validationTableBody');
+
+    if (!tbody) return;
+
+    const rows =
+        buildActiveRouteRows();
 
     tbody.innerHTML = '';
 
-    activeRoute.forEach(item => {
-
-        const diferencia =
-
-            item.escaneado -
-            item.esperado;
-
-        let estado = '';
-        let badge = '';
-
-        // OK
-
-        if (diferencia === 0) {
-
-            estado = 'OK';
-
-            badge = 'success';
-
-        }
-
-        // FALTANTE
-
-        else if (diferencia < 0) {
-
-            estado = 'FALTANTE';
-
-            badge = 'danger';
-
-        }
-
-        // EXCESO
-
-        else {
-
-            estado = 'EXCESO';
-
-            badge = 'warning';
-
-        }
-
-        tbody.innerHTML += `
-
+    if (!activeRouteName) {
+        tbody.innerHTML = `
             <tr>
-
-                <td>${item.caja || '-'}</td>
-
-                <td>${item.upc}</td>
-
-                <td>${item.descripcion}</td>
-
-                <td>${item.esperado}</td>
-
-                <td>${item.escaneado}</td>
-
-                <td>${diferencia}</td>
-
-                <td>
-
-                    <span class="badge bg-${badge}">
-                        ${estado}
-                    </span>
-
+                <td colspan="8" class="text-center text-secondary">
+                    Carga una ruta para iniciar la validación
                 </td>
-
             </tr>
-
         `;
 
-    });
-
-}
-
-
-// =====================================
-// DASHBOARD
-// =====================================
-
-function updateDashboard() {
-
-    if (activeRoute.length === 0)
         return;
-
-    // ESPERADAS
-
-    const expected =
-
-        activeRoute.reduce(
-
-            (sum, item) =>
-
-                sum + item.esperado,
-
-            0
-
-        );
-
-    // ESCANEADAS
-
-    const scanned =
-
-        activeRoute.reduce(
-
-            (sum, item) =>
-
-                sum + item.escaneado,
-
-            0
-
-        );
-
-    // OK
-
-    let ok = 0;
-
-    // FALTANTES
-
-    let missing = 0;
-
-    // EXCESOS
-
-    let excess = 0;
-
-    activeRoute.forEach(item => {
-
-        if (
-            item.escaneado ===
-            item.esperado
-        ) {
-
-            ok += item.esperado;
-
-        }
-
-        // FALTANTE
-
-        if (
-            item.escaneado <
-            item.esperado
-        ) {
-
-            missing +=
-
-                item.esperado -
-                item.escaneado;
-
-        }
-
-        // EXCESO
-
-        if (
-            item.escaneado >
-            item.esperado
-        ) {
-
-            excess +=
-
-                item.escaneado -
-                item.esperado;
-
-        }
-
-    });
-
-    // ACTUALIZAR HTML
-
-    document.getElementById(
-        'routeNumber'
-    ).innerText =
-
-        activeRoute[0].ruta;
-
-    document.getElementById(
-        'expectedPieces'
-    ).innerText = expected;
-
-    document.getElementById(
-        'scannedPieces'
-    ).innerText = scanned;
-
-    document.getElementById(
-        'okPieces'
-    ).innerText = ok;
-
-    document.getElementById(
-        'missingPieces'
-    ).innerText = missing;
-
-    document.getElementById(
-        'excessPieces'
-    ).innerText = excess;
-
-}
-
-
-// =====================================
-// GUARDAR AVANCE
-// =====================================
-
-function saveValidationProgress() {
-
-    if (activeRoute.length === 0)
-        return;
-
-    const progress = {
-
-        route:
-            activeRoute[0].ruta,
-
-        activeRoute:
-            activeRoute,
-
-        validationScans:
-            validationScans
-
-    };
-
-    localStorage.setItem(
-
-        'validationProgress',
-
-        JSON.stringify(progress)
-
-    );
-
-}
-
-
-// =====================================
-// RECUPERAR AVANCE
-// =====================================
-
-window.addEventListener(
-
-    'load',
-
-    () => {
-
-        const savedProgress = JSON.parse(
-
-            localStorage.getItem(
-                'validationProgress'
-            )
-
-        );
-
-        if (!savedProgress)
-            return;
-
-        activeRoute =
-            savedProgress.activeRoute || [];
-
-        validationScans =
-            savedProgress.validationScans || [];
-
-        document.getElementById(
-            'routeInput'
-        ).value =
-
-            savedProgress.route || '';
-
-        updateDashboard();
-
-        renderValidationTable();
-
     }
 
-);
+    if (rows.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-secondary">
+                    Sin datos para esta ruta
+                </td>
+            </tr>
+        `;
 
+        return;
+    }
+
+    rows.forEach(row => {
+        const expected =
+            Number(row.esperado || 0);
+
+        const scannedTotal =
+            Number(row.totalScannedUPC || 0);
+
+        const difference =
+            scannedTotal - expected;
+
+        const status =
+            getStatusFromValues(
+                expected,
+                scannedTotal
+            );
+
+        const badge =
+            getBadgeClass(status);
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${escapeHTML(row.caseId)}</td>
+                <td>${escapeHTML(row.upc)}</td>
+                <td>${escapeHTML(row.descripcion)}</td>
+                <td>${escapeHTML(expected)}</td>
+                <td>${escapeHTML(row.cantidad)}</td>
+                <td>${escapeHTML(difference)}</td>
+                <td>
+                    <span class="badge bg-${badge}">
+                        ${status}
+                    </span>
+                </td>
+                <td>${escapeHTML(row.fecha || '-')}</td>
+            </tr>
+        `;
+    });
+}
 
 // =====================================
 // EXPORTAR EXCEL
 // =====================================
 
 function exportValidationExcel() {
+    const rows =
+        buildActiveRouteRows();
 
-    if (activeRoute.length === 0) {
-
-        alert(
-            'No existen datos'
-        );
-
+    if (rows.length === 0) {
+        alert('No existen datos');
         return;
-
     }
 
-    const report = activeRoute.map(item => ({
+    const report =
+        rows.map(row => {
+            const expected =
+                Number(row.esperado || 0);
 
-        Caja:
-            item.caja,
+            const scannedTotal =
+                Number(row.totalScannedUPC || 0);
 
-        UPC:
-            item.upc,
-
-        Descripcion:
-            item.descripcion,
-
-        Esperado:
-            item.esperado,
-
-        Escaneado:
-            item.escaneado,
-
-        Diferencia:
-            item.escaneado -
-            item.esperado
-
-    }));
+            return {
+                Ruta:
+                    getCurrentRouteName(),
+                Cliente:
+                    getRouteCustomer(getCurrentRouteName()),
+                Case:
+                    row.caseId,
+                UPC:
+                    row.upc,
+                Descripcion:
+                    row.descripcion,
+                Esperado:
+                    expected,
+                Escaneado:
+                    row.cantidad,
+                Diferencia:
+                    scannedTotal - expected,
+                Estado:
+                    getStatusFromValues(
+                        expected,
+                        scannedTotal
+                    ),
+                Fecha:
+                    row.fecha || ''
+            };
+        });
 
     const worksheet =
-        XLSX.utils.json_to_sheet(
-            report
-        );
+        XLSX.utils.json_to_sheet(report);
 
     const workbook =
         XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(
-
         workbook,
-
         worksheet,
-
-        'Validacion'
-
+        'Validacion_por_Case'
     );
 
     XLSX.writeFile(
-
         workbook,
-
-        'SEYL_KALAN_Validacion.xlsx'
-
+        'KHAIRON_Validacion_por_Case.xlsx'
     );
-
 }
 
+window.exportValidationExcel = exportValidationExcel;
 
 // =====================================
 // EXPORTAR PDF
 // =====================================
 
-function exportValidationPDF() {
+async function loadLogoForPDF() {
+    return new Promise(resolve => {
+        const image =
+            new Image();
 
-    // VALIDAR
+        image.onload =
+            () => resolve(image);
 
-    if (activeRoute.length === 0) {
+        image.onerror =
+            () => resolve(null);
 
-        alert(
-            'No existen datos para exportar'
-        );
+        image.src =
+            '../assets/img/logo-global-logistics.png';
+    });
+}
 
+async function exportValidationPDF() {
+    const rows =
+        buildActiveRouteRows();
+
+    if (rows.length === 0) {
+        alert('No existen datos para exportar');
         return;
-
     }
 
-    // JSPDF
+    const commercialRows =
+        rows.filter(row => {
+            const expected =
+                Number(row.esperado || 0);
 
-    const { jsPDF } = window.jspdf;
+            const scannedTotal =
+                Number(row.totalScannedUPC || 0);
 
-    const doc = new jsPDF();
+            return getStatusFromValues(
+                expected,
+                scannedTotal
+            ) !== 'EXCEDENTE';
+        });
 
-    // =====================================
-    // HEADER
-    // =====================================
+    const { jsPDF } =
+        window.jspdf;
 
-    doc.setFillColor(15, 23, 42);
+    const doc =
+        new jsPDF();
 
-    doc.rect(
-        0,
-        0,
-        220,
-        30,
-        'F'
-    );
+    const logo =
+        await loadLogoForPDF();
 
-    // TITULO
+    const routeName =
+        getCurrentRouteName();
 
-    doc.setTextColor(255,255,255);
+    const customerName =
+        getRouteCustomer(routeName);
 
-    doc.setFontSize(22);
+    doc.setFillColor(8, 13, 28);
+    doc.rect(0, 0, 220, 42, 'F');
 
+    doc.setFillColor(16, 185, 129);
+    doc.rect(0, 40, 220, 2, 'F');
+
+    if (logo) {
+        doc.addImage(
+            logo,
+            'PNG',
+            12,
+            6,
+            32,
+            28
+        );
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(19);
     doc.text(
-        'SEYL KALAN',
-        14,
+        'KHAIRON — Validación por Case',
+        50,
         15
     );
 
-    doc.setFontSize(14);
-
+    doc.setFontSize(11);
     doc.text(
-        'Dashboard de Validación',
-        14,
-        24
+        'Operador WMS: Global Logistics',
+        50,
+        25
     );
 
-    // =====================================
-    // INFO
-    // =====================================
-
-    doc.setTextColor(0,0,0);
-
-    doc.setFontSize(12);
-
+    doc.setFontSize(9);
     doc.text(
-
-        `Ruta: ${activeRoute[0].ruta}`,
-
-        14,
-
-        45
-
-    );
-
-    // FECHA
-
-    doc.text(
-
-        `Fecha: ${new Date().toLocaleString()}`,
-
-        14,
-
-        53
-
-    );
-
-    // =====================================
-    // KPIS
-    // =====================================
-
-    const expected = activeRoute.reduce(
-
-        (sum, item) =>
-
-            sum + item.esperado,
-
-        0
-
-    );
-
-    const scanned = activeRoute.reduce(
-
-        (sum, item) =>
-
-            sum + item.escaneado,
-
-        0
-
-    );
-
-    let missing = 0;
-
-    let excess = 0;
-
-    activeRoute.forEach(item => {
-
-        if (
-            item.escaneado <
-            item.esperado
-        ) {
-
-            missing +=
-
-                item.esperado -
-                item.escaneado;
-
-        }
-
-        if (
-            item.escaneado >
-            item.esperado
-        ) {
-
-            excess +=
-
-                item.escaneado -
-                item.esperado;
-
-        }
-
-    });
-
-    // TARJETAS
-
-    doc.setFillColor(34,197,94);
-
-    doc.roundedRect(
-        14,
-        65,
-        40,
-        22,
-        3,
-        3,
-        'F'
-    );
-
-    doc.setTextColor(255,255,255);
-
-    doc.text(
-        'Esperadas',
-        18,
-        74
+        `Cliente: ${customerName}`,
+        50,
+        34
     );
 
     doc.text(
-        String(expected),
-        18,
-        83
+        'Powered by Khairon',
+        162,
+        18
     );
 
-    // ESCANEADAS
-
-    doc.setFillColor(59,130,246);
-
-    doc.roundedRect(
-        60,
-        65,
-        40,
-        22,
-        3,
-        3,
-        'F'
-    );
-
-    doc.text(
-        'Escaneadas',
-        64,
-        74
-    );
-
-    doc.text(
-        String(scanned),
-        64,
-        83
-    );
-
-    // FALTANTES
-
-    doc.setFillColor(239,68,68);
-
-    doc.roundedRect(
-        106,
-        65,
-        40,
-        22,
-        3,
-        3,
-        'F'
-    );
-
-    doc.text(
-        'Faltantes',
-        110,
-        74
-    );
-
-    doc.text(
-        String(missing),
-        110,
-        83
-    );
-
-    // EXCESOS
-
-    doc.setFillColor(245,158,11);
-
-    doc.roundedRect(
-        152,
-        65,
-        40,
-        22,
-        3,
-        3,
-        'F'
-    );
-
-    doc.text(
-        'Excesos',
-        156,
-        74
-    );
-
-    doc.text(
-        String(excess),
-        156,
-        83
-    );
-
-    // =====================================
-    // TABLA
-    // =====================================
-
-    let y = 105;
-
-    doc.setTextColor(0,0,0);
-
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
+    doc.setFillColor(245, 247, 250);
 
-    // HEADER TABLA
-
-    doc.setFillColor(30,41,59);
-
-    doc.rect(
+    doc.roundedRect(
         14,
-        y,
-        180,
-        8,
+        50,
+        182,
+        28,
+        3,
+        3,
         'F'
     );
 
-    doc.setTextColor(255,255,255);
-
-    doc.text('UPC', 16, y + 5);
-
-    doc.text('Esperado', 70, y + 5);
-
-    doc.text('Escaneado', 105, y + 5);
-
-    doc.text('Dif.', 145, y + 5);
-
-    doc.text('Estado', 165, y + 5);
-
-    y += 12;
-
-    // FILAS
-
-    activeRoute.forEach(item => {
-
-        const diferencia =
-
-            item.escaneado -
-            item.esperado;
-
-        let estado = '';
-
-        if (diferencia === 0) {
-
-            estado = 'OK';
-
-        }
-
-        else if (diferencia < 0) {
-
-            estado = 'FALTANTE';
-
-        }
-
-        else {
-
-            estado = 'EXCESO';
-
-        }
-
-        doc.setTextColor(0,0,0);
-
-        doc.text(
-            String(item.upc),
-            16,
-            y
-        );
-
-        doc.text(
-            String(item.esperado),
-            70,
-            y
-        );
-
-        doc.text(
-            String(item.escaneado),
-            110,
-            y
-        );
-
-        doc.text(
-            String(diferencia),
-            145,
-            y
-        );
-
-        doc.text(
-            estado,
-            165,
-            y
-        );
-
-        y += 8;
-
-        // NUEVA PAGINA
-
-        if (y > 270) {
-
-            doc.addPage();
-
-            y = 20;
-
-        }
-
-    });
-
-    // =====================================
-    // FIRMAS
-    // =====================================
-
-    y += 20;
-
-    doc.line(
+    doc.text(
+        `Ruta: ${routeName}`,
         20,
-        y,
-        80,
-        y
+        60
     );
 
-    doc.line(
-        120,
+    doc.text(
+        `Cliente / destino: ${customerName}`,
+        20,
+        68
+    );
+
+    doc.text(
+        `Fecha de generación: ${new Date().toLocaleString()}`,
+        20,
+        76
+    );
+
+    let y = 90;
+
+    const grouped =
+        commercialRows.reduce((acc, row) => {
+            const caseId =
+                row.caseId || 'SIN-CASE';
+
+            if (!acc[caseId]) {
+                acc[caseId] = [];
+            }
+
+            acc[caseId].push(row);
+
+            return acc;
+        }, {});
+
+    Object.keys(grouped)
+        .sort()
+        .forEach(caseId => {
+            if (y > 250) {
+                doc.addPage();
+                y = 18;
+            }
+
+            doc.setFillColor(16, 185, 129);
+
+            doc.roundedRect(
+                14,
+                y,
+                182,
+                10,
+                2,
+                2,
+                'F'
+            );
+
+            doc.setTextColor(2, 18, 13);
+            doc.setFontSize(11);
+            doc.text(
+                caseId,
+                17,
+                y + 6.5
+            );
+
+            y += 14;
+
+            doc.setFillColor(30, 41, 59);
+            doc.rect(14, y, 182, 9, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
+
+            doc.text('UPC', 16, y + 6);
+            doc.text('Descripción', 55, y + 6);
+            doc.text('Cantidad', 128, y + 6);
+            doc.text('Estado', 166, y + 6);
+
+            y += 12;
+
+            grouped[caseId].forEach(row => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 18;
+                }
+
+                const expected =
+                    Number(row.esperado || 0);
+
+                const scannedTotal =
+                    Number(row.totalScannedUPC || 0);
+
+                const status =
+                    getStatusFromValues(
+                        expected,
+                        scannedTotal
+                    );
+
+                doc.setTextColor(15, 23, 42);
+
+                doc.text(
+                    String(row.upc),
+                    16,
+                    y
+                );
+
+                doc.text(
+                    String(row.descripcion)
+                        .slice(0, 34),
+                    55,
+                    y
+                );
+
+                doc.text(
+                    String(row.cantidad),
+                    132,
+                    y
+                );
+
+                doc.text(
+                    status,
+                    166,
+                    y
+                );
+
+                doc.setDrawColor(226, 232, 240);
+
+                doc.line(
+                    14,
+                    y + 3,
+                    196,
+                    y + 3
+                );
+
+                y += 8;
+            });
+
+            y += 6;
+        });
+
+    if (y > 230) {
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFillColor(15, 23, 42);
+
+    doc.roundedRect(
+        14,
         y,
-        180,
+        182,
+        10,
+        2,
+        2,
+        'F'
+    );
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.text(
+        'Resumen final',
+        17,
+        y + 6.5
+    );
+
+    y += 18;
+
+    const summary =
+        commercialRows.reduce(
+            (acc, row) => {
+                const expected =
+                    Number(row.esperado || 0);
+
+                const scannedTotal =
+                    Number(row.totalScannedUPC || 0);
+
+                const status =
+                    getStatusFromValues(
+                        expected,
+                        scannedTotal
+                    );
+
+                acc.cases.add(row.caseId);
+                acc.uniqueUPCs.add(row.upc);
+                acc.scanned += Number(row.cantidad || 0);
+
+                if (status === 'FALTANTE') {
+                    acc.missing++;
+                }
+
+                if (status === 'OK') {
+                    acc.ok++;
+                }
+
+                return acc;
+            },
+            {
+                cases: new Set(),
+                uniqueUPCs: new Set(),
+                scanned: 0,
+                ok: 0,
+                missing: 0
+            }
+        );
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFillColor(245, 247, 250);
+
+    doc.roundedRect(
+        14,
+        y - 8,
+        182,
+        30,
+        3,
+        3,
+        'F'
+    );
+
+    doc.text(
+        `Total de cases: ${summary.cases.size}`,
+        16,
         y
     );
 
     doc.text(
-        'Nombre y Firma Validador',
-        20,
+        `Total de UPC únicos: ${summary.uniqueUPCs.size}`,
+        16,
         y + 8
     );
 
     doc.text(
-        'Nombre y Firma Supervisor',
-        120,
+        `Total piezas escaneadas: ${summary.scanned}`,
+        16,
+        y + 16
+    );
+
+    doc.text(
+        `Total OK: ${summary.ok}`,
+        110,
+        y
+    );
+
+    doc.text(
+        `Total faltantes: ${summary.missing}`,
+        110,
         y + 8
     );
 
-    // =====================================
-    // DESCARGAR
-    // =====================================
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(9);
 
-    // LIMPIAR NOMBRE RUTA
+    doc.text(
+        `Powered by Khairon · Operador WMS: Global Logistics · Cliente: ${customerName}`,
+        14,
+        286
+    );
 
-const routeName = String(
-    activeRoute[0].ruta
-)
-.replace(/[/\\?%*:|"<>]/g, '-');
+    const cleanRoute =
+        String(routeName)
+            .replace(/[/\\?%*:|"<>]/g, '-');
 
-// GUARDAR PDF
+    const cleanCustomer =
+        String(customerName)
+            .replace(/[/\\?%*:|"<>]/g, '-')
+            .slice(0, 40);
 
-doc.save(
-
-    `SEYL_KALAN_RUTA_${routeName}.pdf`
-
-);
-
+    doc.save(
+        `KHAIRON_Validacion_${cleanCustomer}_${cleanRoute}.pdf`
+    );
 }
+
+window.exportValidationPDF = exportValidationPDF;
+
+// =====================================
+// INICIALIZAR
+// =====================================
+
+window.addEventListener('load', () => {
+    const savedProgress =
+        JSON.parse(
+            localStorage.getItem(PROGRESS_STORAGE_KEY)
+        );
+
+    if (savedProgress && savedProgress.route) {
+        activeRouteName =
+            savedProgress.route;
+
+        const routeInput =
+            document.getElementById('routeInput');
+
+        if (routeInput) {
+            routeInput.value =
+                activeRouteName;
+        }
+    }
+
+    initReservedFileListener();
+    initValidationScanListener();
+
+    updateDashboard();
+    renderValidationTable();
+});

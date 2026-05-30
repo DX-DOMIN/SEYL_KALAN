@@ -105,7 +105,7 @@ function exportExcel() {
 
         workbook,
 
-        'SEYL_KALAN_Reporte.xlsx'
+        'KHAIRON_Reporte.xlsx'
 
     );
 
@@ -162,7 +162,7 @@ function exportTXT() {
         URL.createObjectURL(blob);
 
     link.download =
-        'SEYL_KALAN_Reporte.txt';
+        'KHAIRON_Reporte.txt';
 
     // DESCARGAR
 
@@ -293,7 +293,7 @@ async function exportProgressExcel() {
 
         workbook,
 
-        'SEYL_KALAN_Avance_Ubicaciones.xlsx'
+        'KHAIRON_Avance_Ubicaciones.xlsx'
 
     );
 
