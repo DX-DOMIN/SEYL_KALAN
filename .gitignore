@@ -1,0 +1,16 @@
+# Evidencias y salidas generadas durante pruebas locales
+*-proof*.png
+final-check-*.png
+*.pdf
+KHAIRON_Reporte.txt
+KHAIRON_Reporte.xlsx
+
+# Respaldos temporales
+*.bak
+*.bak-*
+
+# Archivos del sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

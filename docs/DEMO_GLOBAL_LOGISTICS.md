@@ -7,7 +7,7 @@ Ejecutar la demo local de Validación por Case usando servidor local, con KHAIRO
 ## URL de demo
 
 ```text
-http://127.0.0.1:8123/modules/validation.html
+http://127.0.0.1:8123/index.html
 ```
 
 ## Por que no usar file://
@@ -39,7 +39,9 @@ http://127.0.0.1:8123/modules/validation.html
 
 ## Flujo de prueba
 
-1. En `Nombre de Ruta`, captura:
+1. Inicia sesion y abre el modulo `Validacion`.
+
+2. En `Nombre de Ruta`, captura:
 
 ```text
 RUTA-001

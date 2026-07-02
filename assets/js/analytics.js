@@ -1,8 +1,6 @@
 // INVENTARIO FÍSICO
 
-const physicalCount = JSON.parse(
-    localStorage.getItem('physicalCount')
-) || [];
+const physicalCount = readStoredArray('physicalCount');
 
 // ELEMENTOS HTML
 
@@ -114,9 +112,9 @@ function renderAnalytics() {
 
             <tr>
 
-                <td>${item.upc}</td>
+                <td>${escapeHTML(item.upc)}</td>
 
-                <td>${item.descripcion}</td>
+                <td>${escapeHTML(item.descripcion)}</td>
 
                 <td>${item.sistema}</td>
 
@@ -127,12 +125,12 @@ function renderAnalytics() {
                 <td>
 
                     <span class="badge bg-${clase}">
-                        ${estado}
+                        ${escapeHTML(estado)}
                     </span>
 
                 </td>
 
-                <td>${recomendacion}</td>
+                <td>${escapeHTML(recomendacion)}</td>
 
             </tr>
 
@@ -159,4 +157,23 @@ function renderAnalytics() {
     accuracy.innerText =
         `${porcentaje}%`;
 
+}
+
+function readStoredArray(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : [];
+    }
+    catch {
+        return [];
+    }
+}
+
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }

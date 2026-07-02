@@ -12,8 +12,8 @@ const VALIDATION_STORAGE_KEY = 'validationCaseRecords';
 const RESERVED_STORAGE_KEY = 'reservedData';
 const PROGRESS_STORAGE_KEY = 'validationProgress';
 
-let reservedData = JSON.parse(localStorage.getItem(RESERVED_STORAGE_KEY)) || [];
-let validationRecords = JSON.parse(localStorage.getItem(VALIDATION_STORAGE_KEY)) || [];
+let reservedData = readStoredArray(RESERVED_STORAGE_KEY);
+let validationRecords = readStoredArray(VALIDATION_STORAGE_KEY);
 let activeRouteName = '';
 
 // =====================================
@@ -22,6 +22,28 @@ let activeRouteName = '';
 
 function normalizeValue(value) {
     return String(value || '').trim().toUpperCase();
+}
+
+function readStoredArray(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : [];
+    }
+    catch {
+        return [];
+    }
+}
+
+function readStoredObject(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return value && typeof value === 'object' && !Array.isArray(value)
+            ? value
+            : null;
+    }
+    catch {
+        return null;
+    }
 }
 
 function normalizeNumber(value) {
@@ -844,8 +866,12 @@ async function exportValidationPDF() {
             ) !== 'EXCEDENTE';
         });
 
-    const { jsPDF } =
-        window.jspdf;
+    if (!window.jspdf?.jsPDF) {
+        alert('No fue posible cargar el generador PDF. Verifica la conexion y recarga.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
 
     const doc =
         new jsPDF();
@@ -1193,10 +1219,7 @@ window.exportValidationPDF = exportValidationPDF;
 // =====================================
 
 window.addEventListener('load', () => {
-    const savedProgress =
-        JSON.parse(
-            localStorage.getItem(PROGRESS_STORAGE_KEY)
-        );
+    const savedProgress = readStoredObject(PROGRESS_STORAGE_KEY);
 
     if (savedProgress && savedProgress.route) {
         activeRouteName =

@@ -22,7 +22,7 @@ Ese modo puede bloquear el logo del PDF por seguridad del navegador y provocar e
 3. Usa esta URL:
 
 ```text
-http://127.0.0.1:8123/modules/validation.html
+http://127.0.0.1:8123/index.html
 ```
 
 4. Mantén abierta la ventana del servidor mientras uses la demo.
@@ -30,7 +30,8 @@ http://127.0.0.1:8123/modules/validation.html
 
 ### Prueba rapida de la demo
 
-1. Captura ruta: `RUTA-001`.
+1. Inicia sesion y abre el modulo `Validacion`.
+2. Captura ruta: `RUTA-001`.
 2. Captura case: `CASE-001`.
 3. Escanea UPC: `75010254001`.
 4. Cambia case a `CASE-002`.

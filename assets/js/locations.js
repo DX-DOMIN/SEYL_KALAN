@@ -114,11 +114,11 @@ async function searchLocation() {
 
                 <tr>
 
-                    <td>${item.ubicacion}</td>
+                    <td>${escapeHTML(item.ubicacion)}</td>
 
-                    <td>${item.upc}</td>
+                    <td>${escapeHTML(item.upc)}</td>
 
-                    <td>${item.descripcion}</td>
+                    <td>${escapeHTML(item.descripcion)}</td>
 
                     <td>${item.existencias}</td>
 
@@ -154,3 +154,12 @@ document
 
         }
     );
+
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
