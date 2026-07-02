@@ -24,7 +24,7 @@
 
     <!-- CSS -->
 
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260702-1">
 
 </head>
 
@@ -126,16 +126,50 @@
         
         </div>
 
+        <section class="consolidation-section mt-4">
+            <div class="consolidation-header">
+                <div>
+                    <h3>Concentrador de avance</h3>
+                    <p>Intercambia resultados entre equipos sin perder ni duplicar escaneos.</p>
+                </div>
+                <span class="consolidation-badge" id="consolidatedEventCount">0 eventos consolidados</span>
+            </div>
+
+            <div class="consolidation-actions">
+                <div class="transfer-action">
+                    <i class="fa-solid fa-file-export"></i>
+                    <div><h4>Equipo de conteo</h4><p>Genera el paquete que se enviara a la computadora central.</p></div>
+                    <button class="btn btn-success" id="exportCountPackage" type="button" onclick="exportCountPackage()">
+                        <i class="fa-solid fa-download"></i> Exportar avance
+                    </button>
+                </div>
+                <div class="transfer-action">
+                    <i class="fa-solid fa-file-import"></i>
+                    <div><h4>Computadora central</h4><p>Carga paquetes JSON o reportes Excel generados por los equipos.</p></div>
+                    <input id="importCountPackages" class="form-control consolidation-file-input" type="file" accept=".json,.xlsx,.xls,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple onchange="importCountPackages(event)" aria-label="Cargar paquetes JSON o Excel">
+                </div>
+            </div>
+
+            <div id="importResult" class="import-result d-none" role="status"></div>
+            <div class="table-responsive mt-3">
+                <table class="table table-dark table-hover align-middle consolidation-table">
+                    <thead><tr><th>Fecha</th><th>Archivo</th><th>Equipo</th><th>Aceptados</th><th>Repetidos</th><th>Rechazados</th><th></th></tr></thead>
+                    <tbody id="importHistory"></tbody>
+                </table>
+            </div>
+        </section>
+
     </div>
 
     <!-- SheetJS -->
 
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="../assets/vendor/xlsx.full.min.js"></script>
 
     <!-- JS -->
 
-    <script src="../assets/js/reports.js"></script>
-    <script src="../assets/js/sidebar.js"></script>
+    <script src="../assets/js/database.js?v=20260702-1"></script>
+    <script src="../assets/js/reports.js?v=20260702-1"></script>
+    <script src="../assets/js/sidebar.js?v=20260702-1"></script>
 </body>
 
 </html>

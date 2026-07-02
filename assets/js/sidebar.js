@@ -2,6 +2,13 @@ document.addEventListener(
     'DOMContentLoaded',
     () => {
 
+        const currentUser = readCurrentUser();
+
+        if (!currentUser) {
+            window.location.replace('../index.html');
+            return;
+        }
+
         const sidebar =
             document.getElementById(
                 'sidebar-container'
@@ -189,8 +196,31 @@ document.addEventListener(
 
         `;
 
+        document
+            .getElementById('adminMenu')
+            ?.closest('.sidebar-group')
+            ?.remove();
+
+        document.querySelectorAll('.user-box').forEach(box => {
+            if (box.id !== 'currentUserBox') {
+                box.textContent = currentUser.name || currentUser.username;
+            }
+        });
+
     }
 );
+
+function readCurrentUser() {
+
+    try {
+        const value = JSON.parse(localStorage.getItem('currentUser'));
+        return value && (value.username || value.name) ? value : null;
+    }
+    catch {
+        return null;
+    }
+
+}
 
 // =====================================
 // TOGGLE MENU

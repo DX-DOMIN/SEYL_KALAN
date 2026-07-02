@@ -3,7 +3,7 @@ setlocal
 
 set "PORT=8123"
 set "HOST=127.0.0.1"
-set "URL=http://127.0.0.1:8123/modules/validation.html"
+set "URL=http://127.0.0.1:8123/index.html"
 
 cd /d "%~dp0"
 

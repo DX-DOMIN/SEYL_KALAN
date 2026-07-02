@@ -14,6 +14,8 @@ let inventory = [];
 
 window.onload = async function () {
 
+    try {
+
     // INICIAR DB
 
     await initDB();
@@ -27,19 +29,19 @@ window.onload = async function () {
         inventory.length
     );
 
+    }
+    catch (error) {
+        console.error('No fue posible cargar el inventario:', error);
+        alert('No fue posible abrir el inventario. Recarga la pagina.');
+    }
+
 };
 
 // =====================================
 // CONTEO FÍSICO
 // =====================================
 
-let physicalCount = JSON.parse(
-
-    localStorage.getItem(
-        'physicalCount'
-    )
-
-) || [];
+let physicalCount = readStoredArray('physicalCount');
 
 
 // =====================================
@@ -100,17 +102,14 @@ function processScan() {
     const upc =
 
         scannerInput.value
-        .trim();
+        .trim()
+        .toUpperCase();
 
     // CANTIDAD
 
-    const qty = parseInt(
-
-        document.getElementById(
-            'qtyInput'
-        ).value
-
-    ) || 1;
+    const qty = Number(
+        document.getElementById('qtyInput').value
+    );
 
     // =====================================
     // VALIDAR
@@ -126,20 +125,42 @@ function processScan() {
 
     }
 
+    if (!inventory.length) {
+
+        alert('Primero carga el inventario ERP/WMS');
+
+        return;
+
+    }
+
+    if (!Number.isInteger(qty) || qty <= 0) {
+
+        alert('La cantidad debe ser un numero entero mayor que cero');
+
+        return;
+
+    }
+
     // =====================================
     // BUSCAR EN INVENTARIO
     // =====================================
 
-    let systemItem = inventory.find(item =>
-
-        String(item.ubicacion)
-            .toUpperCase() ===
-        location &&
-
-        String(item.upc) ===
-        String(upc)
-
+    const locationMatches = inventory.filter(item =>
+        String(item.ubicacion).toUpperCase() === location &&
+        String(item.upc) === String(upc)
     );
+
+    let systemItem = locationMatches.length
+        ? {
+            upc: String(upc),
+            descripcion: locationMatches.find(item => item.descripcion)?.descripcion || 'SIN DESCRIPCION',
+            existencias: locationMatches.reduce(
+                (total, item) => total + (Number(item.existencias) || 0),
+                0
+            ),
+            ubicacionCorrecta: location
+        }
+        : null;
 
     // =====================================
     // ANOMALÍA
@@ -231,6 +252,18 @@ function processScan() {
 
     if (existing) {
 
+        existing.sistema =
+            parseInt(systemItem.existencias, 10) || 0;
+
+        existing.descripcion =
+            systemItem.descripcion;
+
+        existing.anomaly =
+            anomaly;
+
+        existing.ubicacionCorrecta =
+            systemItem.ubicacionCorrecta || 'OK';
+
         existing.fisico =
 
             parseInt(existing.fisico || 0)
@@ -302,7 +335,8 @@ function processScan() {
 
     saveMovement(
         location,
-        upc
+        upc,
+        qty
     );
 
     // =====================================
@@ -439,11 +473,11 @@ function renderTable() {
 
             <tr>
 
-                <td>${item.location}</td>
+                <td>${escapeHTML(item.location)}</td>
 
-                <td>${item.upc}</td>
+                <td>${escapeHTML(item.upc)}</td>
 
-                <td>${item.descripcion}</td>
+                <td>${escapeHTML(item.descripcion)}</td>
 
                 <td>${sistema}</td>
 
@@ -455,7 +489,7 @@ function renderTable() {
 
                     <span class="badge bg-${clase}">
 
-                        ${estado}
+                        ${escapeHTML(estado)}
 
                     </span>
 
@@ -490,20 +524,22 @@ function renderTable() {
 
 function saveMovement(
     location,
-    upc
+    upc,
+    scannedQty
 ) {
 
-    const movements = JSON.parse(
-
-        localStorage.getItem(
-            'movements'
-        )
-
-    ) || [];
+    const movements = readStoredArray('movements');
 
     // FECHA
 
     const now = new Date();
+
+    const countResult = physicalCount.find(item =>
+        String(item.upc) === String(upc) &&
+        String(item.location) === String(location)
+    );
+
+    const currentUser = readStoredObject('currentUser') || {};
 
     const formattedDate =
 
@@ -525,7 +561,11 @@ function saveMovement(
 
         upc: upc,
 
-        date: formattedDate
+        date: formattedDate,
+
+        timestamp: now.toISOString(),
+
+        qty: scannedQty
 
     });
 
@@ -549,6 +589,71 @@ function saveMovement(
 
     );
 
+    // Historial detallado: fuente unica para los KPI del dashboard.
+    const scanHistory = readStoredArray('scanHistory');
+
+    const systemQty = parseInt(countResult?.sistema, 10) || 0;
+    const physicalQty = parseInt(countResult?.fisico, 10) || 0;
+    const isLocationAccurate = !countResult?.anomaly;
+
+    scanHistory.unshift({
+        id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+        timestamp: now.toISOString(),
+        location,
+        upc: String(upc),
+        description: countResult?.descripcion || 'UPC NO REGISTRADO',
+        scannedQty: parseInt(scannedQty, 10) || 1,
+        systemQty,
+        physicalQty,
+        difference: physicalQty - systemQty,
+        isInventoryAccurate: physicalQty === systemQty,
+        isLocationAccurate,
+        expectedLocation: isLocationAccurate
+            ? location
+            : countResult?.ubicacionCorrecta || 'NO EXISTE',
+        user: currentUser.name || currentUser.username || 'Sin usuario'
+    });
+
+    localStorage.setItem(
+        'scanHistory',
+        JSON.stringify(scanHistory)
+    );
+
+}
+
+function readStoredArray(key) {
+
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : [];
+    }
+    catch {
+        return [];
+    }
+
+}
+
+function readStoredObject(key) {
+
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return value && typeof value === 'object' && !Array.isArray(value)
+            ? value
+            : null;
+    }
+    catch {
+        return null;
+    }
+
+}
+
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 

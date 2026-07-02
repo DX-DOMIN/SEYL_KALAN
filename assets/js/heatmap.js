@@ -7,13 +7,7 @@ const heatmapContainer =
 
 // DATOS
 
-const physical = JSON.parse(
-
-    localStorage.getItem(
-        'physicalCount'
-    )
-
-) || [];
+const physical = readStoredArray('physicalCount');
 
 // AGRUPAR UBICACIONES
 
@@ -47,7 +41,7 @@ physical.forEach(item => {
     // ERROR
 
     if (
-        item.fisico !== item.sistema
+        Number(item.fisico) !== Number(item.sistema) || item.anomaly
     ) {
 
         locations[location].errors++;
@@ -115,7 +109,7 @@ Object.keys(locations).forEach(location => {
 
             <h4>
 
-                ${location}
+                ${escapeHTML(location)}
 
             </h4>
 
@@ -153,3 +147,32 @@ Object.keys(locations).forEach(location => {
     `;
 
 });
+
+if (!Object.keys(locations).length) {
+    heatmapContainer.innerHTML = `
+        <div class="col-12">
+            <div class="dashboard-card text-center text-secondary">
+                Aun no existen ubicaciones contadas.
+            </div>
+        </div>
+    `;
+}
+
+function readStoredArray(key) {
+    try {
+        const value = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(value) ? value : [];
+    }
+    catch {
+        return [];
+    }
+}
+
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}

@@ -1,286 +1,102 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - KHAIRON</title>
-
-    <link rel="icon"
-        type="image/png"
-        href="../assets/img/logo.png">
-
-    <!-- BOOTSTRAP -->
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
-
-    <!-- ICONOS -->
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <!-- CSS -->
-
-    <link
-        rel="stylesheet"
-        href="../assets/css/style.css">
-
-    <!-- CHART -->
-
+    <link rel="icon" type="image/png" href="../assets/img/logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260702-1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
-
-<body class="dashboard-body">
-
-    <!-- SIDEBAR -->
-
+<body class="dashboard-body kpi-dashboard">
     <div id="sidebar-container"></div>
-
-    <!-- MAIN -->
-
-    <div class="main-content">
-
-        <!-- TOPBAR -->
-
-        <div class="topbar">
-
+    <main class="main-content">
+        <header class="topbar kpi-topbar">
             <div>
-
-                <h2 class="dashboard-title">
-                    Dashboard Operativo
-                </h2>
-
-                <p class="dashboard-subtitle">
-                    Monitoreo operativo consolidado
-                </p>
-
+                <h2 class="dashboard-title" id="dashboardTitle">KPIs de Inventario - Quiksilver</h2>
+                <p class="dashboard-subtitle">Resultados generados por el modulo Scanner</p>
             </div>
+            <div class="user-box" id="currentUserBox"></div>
+        </header>
 
-            <div
-                class="user-box"
-                id="currentUserBox">
-
-            </div>
-
-        </div>
-
-        <!-- KPIs -->
-
-        <div class="row g-4 mt-2">
-
-            <!-- TOTAL -->
-
-            <div class="col-md-3">
-
-                <div class="dashboard-card">
-
-                    <div class="card-icon blue">
-
-                        <i class="fa-solid fa-box"></i>
-
-                    </div>
-
-                    <h5>Total Revisados</h5>
-
-                    <h2 id="totalReviewed">
-                        0
-                    </h2>
-
-                    <p>
-                        Productos escaneados
-                    </p>
-
+        <section class="kpi-filters" aria-label="Filtros del dashboard">
+            <div class="client-tabs">
+                <label>Cliente</label>
+                <div class="btn-group" role="group" aria-label="Cliente">
+                    <input type="radio" class="btn-check" name="clientFilter" id="quiksilverClient" value="Quiksilver" checked>
+                    <label class="btn btn-outline-light" for="quiksilverClient">Quiksilver</label>
+                    <input type="radio" class="btn-check" name="clientFilter" id="yadatexClient" value="Yadatex">
+                    <label class="btn btn-outline-light" for="yadatexClient">Yadatex</label>
                 </div>
-
             </div>
-
-            <!-- OK -->
-
-            <div class="col-md-3">
-
-                <div class="dashboard-card success">
-
-                    <div class="card-icon green">
-
-                        <i class="fa-solid fa-circle-check"></i>
-
-                    </div>
-
-                    <h5>Productos OK</h5>
-
-                    <h2 id="okProducts">
-                        0
-                    </h2>
-
-                    <p>
-                        Inventario correcto
-                    </p>
-
+            <div class="kpi-date-filter">
+                <label for="startDateFilter">Desde</label>
+                <input id="startDateFilter" type="date" class="form-control">
+            </div>
+            <div class="kpi-date-filter">
+                <label for="endDateFilter">Hasta</label>
+                <input id="endDateFilter" type="date" class="form-control">
+            </div>
+            <div class="granularity-filter">
+                <label>Granularidad</label>
+                <div class="btn-group" role="group" aria-label="Granularidad">
+                    <input type="radio" class="btn-check" name="granularity" id="dailyView" value="daily" checked>
+                    <label class="btn btn-outline-light" for="dailyView">Diaria</label>
+                    <input type="radio" class="btn-check" name="granularity" id="monthlyView" value="monthly">
+                    <label class="btn btn-outline-light" for="monthlyView">Mensual</label>
                 </div>
-
             </div>
+            <button id="resetFilters" class="btn btn-outline-light" type="button" title="Volver al mes actual">
+                <i class="fa-solid fa-rotate-left"></i><span> Actual</span>
+            </button>
+        </section>
 
-            <!-- DIFERENCIAS -->
+        <section class="kpi-metrics-grid mt-3" aria-label="Indicadores principales">
+            <div><article class="dashboard-card kpi-card"><span class="kpi-label">Codigos contados</span><h2 id="countedCodes">0</h2><p>UPC y ubicacion revisados</p></article></div>
+            <div><article class="dashboard-card success kpi-card"><span class="kpi-label">Resultados OK</span><h2 id="okResults">0</h2><p id="okDetail">0% del conteo</p></article></div>
+            <div><article class="dashboard-card warning kpi-card"><span class="kpi-label">Excedentes</span><h2 id="excessResults">0</h2><p id="excessDetail">0% del conteo</p></article></div>
+            <div><article class="dashboard-card danger kpi-card"><span class="kpi-label">Faltantes</span><h2 id="missingResults">0</h2><p id="missingDetail">0% del conteo</p></article></div>
+        </section>
 
-            <div class="col-md-3">
-
-                <div class="dashboard-card danger">
-
-                    <div class="card-icon red">
-
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-
-                    </div>
-
-                    <h5>Diferencias</h5>
-
-                    <h2 id="differenceProducts">
-                        0
-                    </h2>
-
-                    <p>
-                        Faltantes detectados
-                    </p>
-
-                </div>
-
+        <section class="row g-3 mt-1">
+            <div class="col-xl-5">
+                <article class="chart-card kpi-panel">
+                    <div class="chart-header"><div><h4>Resultado del conteo</h4><p>OK, excedentes y faltantes detectados</p></div></div>
+                    <div class="kpi-chart-wrap pie-chart-wrap"><canvas id="resultPieChart"></canvas></div>
+                    <div id="emptyPie" class="kpi-empty d-none">No hay escaneos en el periodo seleccionado.</div>
+                </article>
             </div>
-
-            <!-- EXCESOS -->
-
-            <div class="col-md-3">
-
-                <div class="dashboard-card warning">
-
-                    <div class="card-icon yellow">
-
-                        <i class="fa-solid fa-arrow-trend-up"></i>
-
-                    </div>
-
-                    <h5>Exceso Físico</h5>
-
-                    <h2 id="excessProducts">
-                        0
-                    </h2>
-
-                    <p>
-                        Sobrante físico
-                    </p>
-
-                </div>
-
+            <div class="col-xl-7">
+                <article class="chart-card kpi-panel">
+                    <div class="chart-header"><div><h4 id="layoutTitle">Avance Quiksilver · Layout TR3</h4><p id="layoutSummary">0 ubicaciones contadas</p></div><strong id="progressPercent">0%</strong></div>
+                    <div class="progress kpi-progress" role="progressbar" aria-label="Avance de conteo"><div id="progressBar" class="progress-bar"></div></div>
+                    <div id="clientProgress" class="client-progress"></div>
+                </article>
             </div>
+        </section>
 
-        </div>
+        <section class="mt-3">
+            <article class="chart-card kpi-panel trend-panel">
+                <div class="chart-header"><div><h4>Tendencia de IRA e ILA</h4><p id="trendCaption">IRA por piezas e ILA por ubicacion</p></div></div>
+                <div class="kpi-chart-wrap trend-chart-wrap"><canvas id="accuracyTrendChart"></canvas></div>
+                <div id="emptyTrend" class="kpi-empty d-none">No hay escaneos en el periodo seleccionado.</div>
+            </article>
+        </section>
 
-        <!-- SEGUNDA FILA -->
-
-        <div class="row g-4 mt-4">
-
-            <!-- EXACTITUD -->
-
-            <div class="col-lg-4">
-
-                <div class="dashboard-card accuracy-card">
-
-                    <h4>
-                        Exactitud Operativa
-                    </h4>
-
-                    <div class="accuracy-circle">
-
-                        <span id="accuracyPercent">
-                            0%
-                        </span>
-
-                    </div>
-
-                    <p>
-                        Precisión inventario físico vs sistema
-                    </p>
-
-                </div>
-
+        <section class="table-section mt-3 kpi-table-section">
+            <div class="table-header"><div><h4>Ranking de UPC criticos</h4><p>Frecuencia, magnitud y recurrencia de diferencias</p></div></div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead><tr><th>#</th><th>UPC</th><th>Descripcion</th><th>Incidencias</th><th>Faltantes</th><th>Sobrantes</th><th>Dias</th><th>Ubicaciones</th><th>Ultima incidencia</th></tr></thead>
+                    <tbody id="criticalSkuTable"></tbody>
+                </table>
             </div>
-
-            <!-- GRAFICA -->
-
-            <div class="col-lg-8">
-
-                <div class="chart-card">
-
-                    <div class="chart-header">
-
-                        <h4>
-                            Actividad de Escaneo
-                        </h4>
-
-                    </div>
-
-                    <canvas id="inventoryChart"></canvas>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- MOVIMIENTOS -->
-
-        <div class="table-section mt-5">
-
-            <div class="table-header">
-
-                <h4>
-                    Últimos Movimientos
-                </h4>
-
-            </div>
-
-            <table
-                class="table table-dark table-hover align-middle">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Ubicación</th>
-                        <th>UPC</th>
-                        <th>Descripción</th>
-                        <th>Estado</th>
-                        <th>Fecha</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody id="movementsTable">
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-    <!-- JS -->
-
-    <script src="../assets/js/database.js"></script>
-
-    <script src="../assets/js/dashboard.js"></script>
-
-    <script src="../assets/js/sidebar.js"></script>
-
+        </section>
+    </main>
+    <script src="../assets/js/database.js?v=20260702-1"></script>
+    <script src="../assets/js/dashboard.js?v=20260702-1"></script>
+    <script src="../assets/js/sidebar.js?v=20260702-1"></script>
 </body>
-
 </html>

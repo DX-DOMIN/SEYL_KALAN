@@ -50,6 +50,11 @@ document.addEventListener(
 
 function initializeTable() {
 
+    if (!window.jQuery || !jQuery.fn?.DataTable) {
+        table = null;
+        return;
+    }
+
     table = $('#inventoryTable').DataTable({
 
         destroy: true,
@@ -130,7 +135,7 @@ async function handleFile(event) {
                 console.error(error);
 
                 alert(
-                    'Error leyendo archivo'
+                    error.message || 'Error leyendo archivo'
                 );
 
             }
@@ -147,19 +152,42 @@ async function handleFile(event) {
 
 async function processData(data) {
 
-    const parsed = Papa.parse(data, {
+    const parsed = window.Papa
+        ? Papa.parse(data, {
 
-        header: true,
+            header: true,
 
-        skipEmptyLines: true,
+            skipEmptyLines: true,
 
-        transformHeader: header =>
+            transformHeader: normalizeHeader
 
-            header
-                .trim()
-                .toLowerCase()
+        })
+        : parseDelimitedData(data);
 
-    });
+    if (parsed.errors.length) {
+
+        const fatalError = parsed.errors.find(error =>
+            error.type === 'Delimiter' || error.type === 'Quotes'
+        );
+
+        if (fatalError) {
+            throw new Error(`Formato de archivo invalido: ${fatalError.message}`);
+        }
+
+    }
+
+    const headers = parsed.meta.fields || [];
+    const hasLocation = headers.includes('ubicacion');
+    const hasCode = headers.some(header => ['upc', 'codigo', 'codigobarras'].includes(header));
+    const hasStock = headers.some(header => ['existencias', 'real', 'cantidad'].includes(header));
+
+    if (!hasLocation || !hasCode || !hasStock) {
+
+        throw new Error(
+            'El archivo debe incluir UBICACION, CODIGO/UPC y REAL/EXISTENCIAS'
+        );
+
+    }
 
     const inventory = [];
 
@@ -176,30 +204,27 @@ async function processData(data) {
 
             upc:
                 String(
-                    row.upc || ''
+                    firstValue(row, ['upc', 'codigo', 'codigobarras'])
                 )
-                    .trim(),
+                    .trim()
+                    .toUpperCase(),
 
             descripcion:
                 String(
-                    row.descripcion || ''
+                    firstValue(row, ['descripcion', 'producto'])
                 )
                     .trim(),
 
             existencias:
-                Number(
-                    row.existencias || 0
+                parseQuantity(
+                    firstValue(row, ['existencias', 'real', 'cantidad'])
                 ),
 
             reservado:
-                Number(
-                    row.reservado || 0
-                ),
+                parseQuantity(row.reservado),
 
             disponible:
-                Number(
-                    row.disponible || 0
-                )
+                parseQuantity(row.disponible)
 
         };
 
@@ -218,6 +243,16 @@ async function processData(data) {
 
     });
 
+    if (!inventory.length) {
+
+        throw new Error(
+            'No se encontraron registros validos para cargar'
+        );
+
+    }
+
+    const omittedRows = parsed.data.length - inventory.length;
+
     try {
 
         // GUARDAR INVENTARIO
@@ -234,7 +269,8 @@ async function processData(data) {
 
         alert(
 
-            `Inventario cargado correctamente: ${inventory.length} registros`
+            `Inventario cargado correctamente: ${inventory.length} registros` +
+            (omittedRows ? `\nRegistros omitidos por datos incompletos: ${omittedRows}` : '')
 
         );
 
@@ -252,11 +288,124 @@ async function processData(data) {
 
 }
 
+function normalizeHeader(header) {
+
+    return String(header || '')
+        .replace(/^\uFEFF/, '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+}
+
+function firstValue(row, keys) {
+
+    for (const key of keys) {
+
+        if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+            return row[key];
+        }
+
+    }
+
+    return '';
+
+}
+
+function parseQuantity(value) {
+
+    const normalized = String(value ?? '')
+        .trim()
+        .replace(/,/g, '');
+
+    const quantity = Number(normalized || 0);
+
+    return Number.isFinite(quantity) ? quantity : 0;
+
+}
+
+function parseDelimitedData(data) {
+    const lines = String(data || '')
+        .replace(/^\uFEFF/, '')
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== '');
+
+    if (!lines.length) {
+        return { data: [], errors: [], meta: { fields: [] } };
+    }
+
+    const delimiter = lines[0].includes('\t') ? '\t' : ',';
+    const fields = parseDelimitedLine(lines[0], delimiter).map(normalizeHeader);
+    const rows = lines.slice(1).map(line => {
+        const values = parseDelimitedLine(line, delimiter);
+        return fields.reduce((row, field, index) => {
+            row[field] = values[index] ?? '';
+            return row;
+        }, {});
+    });
+
+    return { data: rows, errors: [], meta: { fields } };
+}
+
+function parseDelimitedLine(line, delimiter) {
+    const values = [];
+    let value = '';
+    let quoted = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+        const character = line[index];
+
+        if (character === '"') {
+            if (quoted && line[index + 1] === '"') {
+                value += '"';
+                index += 1;
+            }
+            else {
+                quoted = !quoted;
+            }
+        }
+        else if (character === delimiter && !quoted) {
+            values.push(value);
+            value = '';
+        }
+        else {
+            value += character;
+        }
+    }
+
+    values.push(value);
+    return values;
+}
+
 // =====================================
 // RENDER TABLA
 // =====================================
 
 function renderInventory(inventory) {
+
+    if (!table) {
+        const tbody = document.querySelector('#inventoryTable tbody');
+        tbody.replaceChildren();
+
+        inventory.slice(0, 500).forEach(item => {
+            const row = tbody.insertRow();
+            [
+                item.ubicacion,
+                item.upc,
+                item.descripcion,
+                item.existencias,
+                item.reservado,
+                item.disponible
+            ].forEach(value => {
+                const cell = row.insertCell();
+                cell.textContent = value;
+            });
+        });
+
+        return;
+    }
 
     table.clear();
 
