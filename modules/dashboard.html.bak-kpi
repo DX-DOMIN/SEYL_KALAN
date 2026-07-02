@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard - KHAIRON</title>
+
+    <link rel="icon"
+        type="image/png"
+        href="../assets/img/logo.png">
+
+    <!-- BOOTSTRAP -->
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <!-- ICONOS -->
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- CSS -->
+
+    <link
+        rel="stylesheet"
+        href="../assets/css/style.css">
+
+    <!-- CHART -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body class="dashboard-body">
+
+    <!-- SIDEBAR -->
+
+    <div id="sidebar-container"></div>
+
+    <!-- MAIN -->
+
+    <div class="main-content">
+
+        <!-- TOPBAR -->
+
+        <div class="topbar">
+
+            <div>
+
+                <h2 class="dashboard-title">
+                    Dashboard Operativo
+                </h2>
+
+                <p class="dashboard-subtitle">
+                    Monitoreo operativo consolidado
+                </p>
+
+            </div>
+
+            <div
+                class="user-box"
+                id="currentUserBox">
+
+            </div>
+
+        </div>
+
+        <!-- KPIs -->
+
+        <div class="row g-4 mt-2">
+
+            <!-- TOTAL -->
+
+            <div class="col-md-3">
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon blue">
+
+                        <i class="fa-solid fa-box"></i>
+
+                    </div>
+
+                    <h5>Total Revisados</h5>
+
+                    <h2 id="totalReviewed">
+                        0
+                    </h2>
+
+                    <p>
+                        Productos escaneados
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- OK -->
+
+            <div class="col-md-3">
+
+                <div class="dashboard-card success">
+
+                    <div class="card-icon green">
+
+                        <i class="fa-solid fa-circle-check"></i>
+
+                    </div>
+
+                    <h5>Productos OK</h5>
+
+                    <h2 id="okProducts">
+                        0
+                    </h2>
+
+                    <p>
+                        Inventario correcto
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- DIFERENCIAS -->
+
+            <div class="col-md-3">
+
+                <div class="dashboard-card danger">
+
+                    <div class="card-icon red">
+
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+
+                    </div>
+
+                    <h5>Diferencias</h5>
+
+                    <h2 id="differenceProducts">
+                        0
+                    </h2>
+
+                    <p>
+                        Faltantes detectados
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- EXCESOS -->
+
+            <div class="col-md-3">
+
+                <div class="dashboard-card warning">
+
+                    <div class="card-icon yellow">
+
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+
+                    </div>
+
+                    <h5>Exceso Físico</h5>
+
+                    <h2 id="excessProducts">
+                        0
+                    </h2>
+
+                    <p>
+                        Sobrante físico
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SEGUNDA FILA -->
+
+        <div class="row g-4 mt-4">
+
+            <!-- EXACTITUD -->
+
+            <div class="col-lg-4">
+
+                <div class="dashboard-card accuracy-card">
+
+                    <h4>
+                        Exactitud Operativa
+                    </h4>
+
+                    <div class="accuracy-circle">
+
+                        <span id="accuracyPercent">
+                            0%
+                        </span>
+
+                    </div>
+
+                    <p>
+                        Precisión inventario físico vs sistema
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- GRAFICA -->
+
+            <div class="col-lg-8">
+
+                <div class="chart-card">
+
+                    <div class="chart-header">
+
+                        <h4>
+                            Actividad de Escaneo
+                        </h4>
+
+                    </div>
+
+                    <canvas id="inventoryChart"></canvas>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MOVIMIENTOS -->
+
+        <div class="table-section mt-5">
+
+            <div class="table-header">
+
+                <h4>
+                    Últimos Movimientos
+                </h4>
+
+            </div>
+
+            <table
+                class="table table-dark table-hover align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Ubicación</th>
+                        <th>UPC</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="movementsTable">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- JS -->
+
+    <script src="../assets/js/database.js"></script>
+
+    <script src="../assets/js/dashboard.js"></script>
+
+    <script src="../assets/js/sidebar.js"></script>
+
+</body>
+
+</html>
