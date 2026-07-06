@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
         startDateFilter.value = localStorage.getItem('kpiStartDate') || toDateInputValue(monthStart);
         endDateFilter.value = localStorage.getItem('kpiEndDate') || toDateInputValue(today);
+        includeLatestSweepDate(startDateFilter, endDateFilter, history);
         const savedClient = localStorage.getItem('kpiClient') || 'Quiksilver';
         const savedClientControl = document.querySelector(`[name="clientFilter"][value="${savedClient}"]`);
         if (savedClientControl) savedClientControl.checked = true;
@@ -102,44 +103,18 @@ async function loadLayout() {
 }
 
 function loadScanHistory() {
-    const history = readStorageArray('scanHistory');
-    if (history.length) return history.map(normalizeEvent).filter(Boolean);
-
-    // Compatibilidad con conteos creados antes del historial detallado.
-    return readStorageArray('physicalCount').map((item, index) => normalizeEvent({
-        id: `legacy-${index}`,
-        timestamp: parseLegacyDate(item.fecha),
-        location: item.location,
-        upc: item.upc,
-        description: item.descripcion,
-        systemQty: item.sistema,
-        physicalQty: item.fisico,
-        isLocationAccurate: !item.anomaly,
-        expectedLocation: item.ubicacionCorrecta
-    })).filter(Boolean);
+    return KhaironCountData.getUnifiedCountEvents({ mode: 'operational' });
 }
 
-function normalizeEvent(item) {
-    const date = new Date(item.timestamp);
-    if (!item.location || !item.upc || Number.isNaN(date.getTime())) return null;
-
-    const systemQty = Number(item.systemQty ?? item.sistema) || 0;
-    const physicalQty = Number(item.physicalQty ?? item.fisico) || 0;
-    const locationAccurate = item.isLocationAccurate ?? !item.anomaly;
-
-    return {
-        id: item.id,
-        timestamp: date.toISOString(),
-        location: String(item.location).toUpperCase(),
-        upc: String(item.upc),
-        description: item.description || item.descripcion || 'Sin descripcion',
-        systemQty,
-        physicalQty,
-        difference: Number(item.difference ?? (physicalQty - systemQty)) || 0,
-        isInventoryAccurate: physicalQty === systemQty,
-        isLocationAccurate: Boolean(locationAccurate),
-        expectedLocation: item.expectedLocation || item.ubicacionCorrecta || item.location
-    };
+function includeLatestSweepDate(startInput, endInput, history) {
+    if (!history.length) return;
+    const latestDate = history.reduce((latest, event) => {
+        const eventDate = event.countDate || localDateKey(event.timestamp);
+        return eventDate > latest ? eventDate : latest;
+    }, '');
+    if (!latestDate) return;
+    if (!endInput.value || latestDate > endInput.value) endInput.value = latestDate;
+    if (!startInput.value || startInput.value > latestDate) startInput.value = latestDate;
 }
 
 function renderDashboard(inventory, layout, history, startDate, endDate, granularity, client) {
@@ -426,7 +401,10 @@ function renderCriticalRanking(events, granularity) {
 function latestByKey(events, keySelector) {
     const latest = new Map();
     events.forEach(event => {
-        const key = keySelector(event);
+        const baseKey = keySelector(event);
+        const key = event.hasConflict
+            ? `${baseKey}|${event.conflictGroupId}|${event.eventFingerprint}`
+            : baseKey;
         const current = latest.get(key);
         if (!current || event.timestamp > current.timestamp) latest.set(key, event);
     });
@@ -434,7 +412,7 @@ function latestByKey(events, keySelector) {
 }
 
 function eventMatchesDateRange(event, startDate, endDate) {
-    const eventDate = localDateKey(event.timestamp);
+    const eventDate = event.countDate || '';
     return (!startDate || eventDate >= startDate) && (!endDate || eventDate <= endDate);
 }
 

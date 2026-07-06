@@ -1,101 +1,31 @@
-// =====================================
-// LOGIN WMS
-// =====================================
+const loginForm = document.getElementById('loginForm');
 
-document
-    .getElementById('loginForm')
+loginForm?.addEventListener('submit', event => {
+    event.preventDefault();
 
-    .addEventListener(
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const result = KhaironAuth.authenticate(username, password);
 
-        'submit',
+    if (!result.ok) {
+        showLoginMessage(result.message, 'danger');
+        return;
+    }
 
-        function (e) {
+    const destination = KhaironAuth.getFirstAllowedPage(result.user);
+    if (!destination) {
+        KhaironAuth.logout(false);
+        showLoginMessage('El usuario no tiene modulos asignados', 'warning');
+        return;
+    }
 
-            e.preventDefault();
+    window.location.href = `modules/${destination}`;
+});
 
-            const username =
-                document
-                    .getElementById('username')
-                    .value
-                    .trim();
-
-            const password =
-                document
-                    .getElementById('password')
-                    .value
-                    .trim();
-
-            // =====================================
-            // USUARIOS
-            // =====================================
-
-            const users = {
-
-                contador1: {
-                    password: 'conteo101',
-                    name: 'Contador 1'
-                },
-
-                contador2: {
-                    password: 'conteo202',
-                    name: 'Contador 2'
-                },
-
-                contador3: {
-                    password: 'conteo303',
-                    name: 'Contador 3'
-                },
-
-                supervisor: {
-                    password: 'admin404',
-                    name: 'Supervisor Operativo'
-                }
-
-            };
-
-            // =====================================
-            // VALIDAR
-            // =====================================
-
-            if (
-
-                users[username] &&
-
-                users[username].password === password
-
-            ) {
-
-                // GUARDAR SESION
-
-                localStorage.setItem(
-
-                    'currentUser',
-
-                    JSON.stringify({
-
-                        username: username,
-
-                        name: users[username].name
-
-                    })
-
-                );
-
-                // REDIRECCION
-
-                window.location.href =
-                    'modules/dashboard.html';
-
-            }
-
-            else {
-
-                alert(
-                    'Usuario o contraseña incorrectos'
-                );
-
-            }
-
-        }
-
-    );
+function showLoginMessage(message, type) {
+    const box = document.getElementById('loginMessage');
+    if (!box) return;
+    box.className = `login-message ${type}`;
+    box.textContent = message;
+    box.hidden = false;
+}

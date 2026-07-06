@@ -2,144 +2,193 @@
 <html lang="es">
 
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Barrido Físico - KHAIRON</title>
+    <title>Barrido Fisico por Ubicacion - KHAIRON</title>
     <link rel="icon" type="image/png" href="../assets/img/logo.png">
-    <!-- Bootstrap -->
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
-
-    <!-- Icons -->
-
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <!-- CSS -->
-
-    <link rel="stylesheet" href="../assets/css/style.css?v=20260702-1">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=20260704-1">
 </head>
 
-<body class="dashboard-body">
-
+<body class="dashboard-body location-sweep-body">
     <div id="sidebar-container"></div>
 
-    <!-- MAIN -->
-
-    <div class="main-content">
-
-        <div class="topbar">
-
-            <h2>
-                Barrido Físico Operativo
-            </h2>
-
-            <div class="user-box">
-                Inventario Físico
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h2>Barrido Fisico por Ubicacion</h2>
+                <p class="mb-0">Carga, cuenta, revisa y guarda una ubicacion completa.</p>
             </div>
+            <div class="user-box">Inventario Fisico</div>
+        </header>
 
-        </div>
+        <section class="location-sweep-workflow" aria-label="Flujo de barrido">
+            <span class="active" data-step-indicator="load"><b>1</b>Cargar ubicacion</span>
+            <span data-step-indicator="scan"><b>2</b>Capturar</span>
+            <span data-step-indicator="review"><b>3</b>Revisar cuadre</span>
+            <span data-step-indicator="save"><b>4</b>Guardar</span>
+        </section>
 
-        <!-- SELECT LOCATION -->
+        <div id="sweepMessage" class="sweep-message" role="status" hidden></div>
 
-        <div class="scanner-card mt-4">
-
-            <div class="row g-4">
-
-                <div class="col-md-4">
-
-                    <label>
-                        Ubicación
-                    </label>
-
-                    <input
-                        type="text"
-                        id="locationInput"
-                        class="form-control custom-input"
-                        placeholder="Ejemplo: A-01-01">
-
+        <section class="scanner-card location-load-panel">
+            <div class="section-heading">
+                <div>
+                    <span class="section-eyebrow">Paso 1</span>
+                    <h3>Ubicacion a contar</h3>
                 </div>
-
-                <div class="col-md-8">
-
-                    <label>
-                        Escaneo UPC
-                    </label>
-
-                    <input
-                        type="text"
-                        id="scannerInput"
-                        class="form-control custom-input"
-                        placeholder="Escanear UPC"
-                        autofocus>
-                        <div class="massive-capture mt-3">
-
-                            <label class="form-label">
-                                Cantidad Capturada
-                            </label>
-                        
-                            <input
-                                type="number"
-                                id="qtyInput"
-                                class="form-control custom-input"
-                                value="1"
-                                min="1">
-                        
-                        </div>
-
+                <span id="loadedLocationBadge" class="loaded-location-badge">Sin ubicacion cargada</span>
+            </div>
+            <div class="location-load-grid">
+                <div>
+                    <label for="locationInput">Ubicacion</label>
+                    <input type="text" id="locationInput" class="form-control custom-input"
+                        placeholder="Ejemplo: TR3D08001" autocomplete="off">
                 </div>
-
+                <button type="button" id="loadLocationButton" class="btn btn-primary">
+                    <i class="fa-solid fa-location-crosshairs"></i> Cargar ubicacion
+                </button>
             </div>
+        </section>
 
-        </div>
-
-        <!-- TABLE -->
-
-        <div class="table-section mt-5">
-
-            <div class="table-header">
-
-                <h4>
-                    Conteo Físico
-                </h4>
-
+        <section class="scanner-card expected-inventory-panel">
+            <div class="section-heading">
+                <div>
+                    <span class="section-eyebrow">Inventario de referencia</span>
+                    <h3>Inventario esperado</h3>
+                </div>
+                <span id="expectedInventoryCount" class="panel-count">0 UPC</span>
             </div>
+            <div class="table-responsive">
+                <table class="table align-middle location-sweep-table">
+                    <thead>
+                        <tr><th>UPC</th><th>Descripcion</th><th>Sistema</th><th>Reservado</th><th>Disponible</th></tr>
+                    </thead>
+                    <tbody id="expectedInventoryBody">
+                        <tr><td colspan="5" class="sweep-empty-state">Carga una ubicacion para consultar su inventario.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-            <table class="table table-dark table-hover">
+        <section class="scanner-card capture-panel" id="capturePanel" aria-disabled="true">
+            <div class="section-heading">
+                <div>
+                    <span class="section-eyebrow">Paso 2</span>
+                    <h3>Captura fisica</h3>
+                </div>
+            </div>
+            <div class="capture-grid">
+                <div class="capture-upc-field">
+                    <label for="scannerInput">UPC</label>
+                    <input type="text" id="scannerInput" class="form-control custom-input"
+                        placeholder="Escanear UPC" autocomplete="off" disabled>
+                </div>
+                <div>
+                    <label for="qtyInput">Cantidad</label>
+                    <input type="number" id="qtyInput" class="form-control custom-input" value="1" min="1" step="1" disabled>
+                </div>
+                <button type="button" id="addScanButton" class="btn btn-success" disabled>
+                    <i class="fa-solid fa-plus"></i> Agregar escaneo
+                </button>
+                <button type="button" id="markEmptyButton" class="btn btn-outline-danger" disabled>
+                    <i class="fa-solid fa-box-open"></i> Marcar ubicacion vacia
+                </button>
+            </div>
+            <div class="mt-3">
+                <label for="observationsInput">Observaciones <span class="text-secondary">(opcional)</span></label>
+                <textarea id="observationsInput" class="form-control" rows="2" maxlength="500"
+                    placeholder="Anota condiciones de la ubicacion o incidencias" disabled></textarea>
+            </div>
+        </section>
 
-                <thead>
+        <section class="location-summary-grid" aria-label="Resumen de la ubicacion">
+            <article><span>UPC sistema</span><strong id="summarySystemUpcs">0</strong></article>
+            <article><span>Piezas sistema</span><strong id="summarySystemPieces">0</strong></article>
+            <article><span>UPC fisico</span><strong id="summaryPhysicalUpcs">0</strong></article>
+            <article><span>Piezas fisicas</span><strong id="summaryPhysicalPieces">0</strong></article>
+            <article class="summary-ok"><span>OK</span><strong id="summaryOk">0</strong></article>
+            <article class="summary-shortage"><span>Faltantes</span><strong id="summaryShortage">0</strong></article>
+            <article class="summary-overage"><span>Sobrantes</span><strong id="summaryOverage">0</strong></article>
+            <article class="summary-location"><span>Fuera ubicacion</span><strong id="summaryOutOfLocation">0</strong></article>
+            <article class="summary-unregistered"><span>No registrados</span><strong id="summaryNotRegistered">0</strong></article>
+        </section>
 
-                    <tr>
+        <section class="table-section location-reconciliation-panel">
+            <div class="section-heading table-header">
+                <div>
+                    <span class="section-eyebrow">Paso 3</span>
+                    <h3>Cuadre en tiempo real</h3>
+                </div>
+                <span id="reconciliationCount" class="panel-count">0 lineas</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle location-sweep-table">
+                    <thead>
+                        <tr>
+                            <th>Ubicacion</th><th>UPC</th><th>Descripcion</th><th>Sistema</th><th>Reservado</th>
+                            <th>Disponible</th><th>Fisico</th><th>Diferencia</th><th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reconciliationBody">
+                        <tr><td colspan="9" class="sweep-empty-state">Aun no hay una ubicacion cargada.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sweep-save-actions">
+                <button type="button" id="clearSweepButton" class="btn btn-outline-secondary" disabled>
+                    <i class="fa-solid fa-eraser"></i> Limpiar captura
+                </button>
+                <button type="button" id="saveSweepButton" class="btn btn-success" disabled>
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar barrido
+                </button>
+            </div>
+        </section>
 
-                        <th>Ubicación</th>
-                        <th>UPC</th>
-                        <th>Descripción</th>
-                        <th>Sistema</th>
-                        <th>Físico</th>
-                        <th>Diferencia</th>
-                        <th>Estado</th>
+        <section class="table-section saved-counts-panel">
+            <div class="section-heading table-header">
+                <div><span class="section-eyebrow">Historial compatible</span><h3>Conteos guardados</h3></div>
+                <span id="savedCountTotal" class="panel-count">0 registros</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr><th>Fecha</th><th>Ubicacion</th><th>UPC</th><th>Sistema</th><th>Fisico</th><th>Diferencia</th><th>Estado</th><th>Accion</th></tr>
+                    </thead>
+                    <tbody id="savedScannerTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-                    </tr>
+    <dialog id="deleteScanDialog" class="authorization-dialog" aria-labelledby="deleteScanTitle">
+        <form id="deleteScanForm" method="dialog">
+            <div class="authorization-dialog-header">
+                <div><span class="authorization-eyebrow">Accion protegida</span><h3 id="deleteScanTitle">Eliminar registro erroneo</h3></div>
+                <button type="button" class="dialog-close" id="cancelDeleteScan" title="Cancelar" aria-label="Cancelar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p id="deleteScanSummary" class="authorization-summary"></p>
+            <div id="deleteScanMessage" class="authorization-message" hidden></div>
+            <label for="adminUsername">Usuario Administrador</label>
+            <input id="adminUsername" name="adminUsername" class="form-control" autocomplete="username" required>
+            <label for="adminPassword">Contrasena</label>
+            <input id="adminPassword" name="adminPassword" type="password" class="form-control" autocomplete="current-password" required>
+            <label for="deleteReason">Motivo de eliminacion</label>
+            <textarea id="deleteReason" name="deleteReason" class="form-control" rows="3" minlength="4" required></textarea>
+            <div class="authorization-dialog-actions">
+                <button type="button" class="btn btn-outline-secondary" id="cancelDeleteScanBottom">Cancelar</button>
+                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash-can"></i> Eliminar registro</button>
+            </div>
+        </form>
+    </dialog>
 
-                </thead>
-
-                <tbody id="scannerTableBody">
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-
-    <script src="../assets/js/database.js?v=20260702-1"></script>
-    <script src="../assets/js/scanner.js?v=20260702-1"></script>
-    <script src="../assets/js/sidebar.js?v=20260702-1"></script>
+    <script src="../assets/js/auth.js?v=20260704-1"></script>
+    <script src="../assets/js/database.js?v=20260704-1"></script>
+    <script src="../assets/js/count-data-adapter.js?v=20260706-2"></script>
+    <script src="../assets/js/scanner.js?v=20260706-2"></script>
+    <script src="../assets/js/sidebar.js?v=20260704-1"></script>
 </body>
-
 </html>

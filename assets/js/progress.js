@@ -7,7 +7,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         await initDB();
 
         const inventory = await getInventory();
-        const physical = readStoredArray('physicalCount');
+        const period = KhaironCountData.getStoredPeriod();
+        const physical = KhaironCountData.getUnifiedCountEvents({
+            mode: 'operational', startDate: period.startDate, endDate: period.endDate
+        });
 
         renderProgress(progressBody, inventory, physical);
     }
@@ -27,6 +30,7 @@ function renderProgress(progressBody, inventory, physical) {
 
     const expectedByLocation = new Map();
     const scannedByLocation = new Map();
+    const validatedEmptyLocations = new Set();
 
     inventory.forEach(item => {
         const location = String(item.ubicacion || '').trim().toUpperCase();
@@ -41,21 +45,34 @@ function renderProgress(progressBody, inventory, physical) {
     });
 
     physical.forEach(item => {
-        const location = String(item.location || '').trim().toUpperCase();
+        const location = String(item.location || item.ubicacion || '').trim().toUpperCase();
         const upc = String(item.upc || '').trim();
         if (!location || !upc) return;
+
+        const rawStatus = String(item.rawStatus || '').toUpperCase();
+        if (item.isEmptyLocationValidation || ['UBICACION_VACIA_VALIDADA', 'VACIA_VALIDADA'].includes(rawStatus)) {
+            validatedEmptyLocations.add(location);
+        }
 
         if (!scannedByLocation.has(location)) {
             scannedByLocation.set(location, new Set());
         }
 
-        scannedByLocation.get(location).add(upc);
+        if (upc !== '__EMPTY__') scannedByLocation.get(location).add(upc);
     });
 
-    [...expectedByLocation.keys()].sort().forEach(location => {
-        const expected = expectedByLocation.get(location).size;
+    const locations = new Set([
+        ...expectedByLocation.keys(),
+        ...scannedByLocation.keys(),
+        ...validatedEmptyLocations
+    ]);
+
+    [...locations].sort().forEach(location => {
+        const expected = expectedByLocation.get(location)?.size || 0;
         const scanned = scannedByLocation.get(location)?.size || 0;
-        const status = scanned === 0
+        const status = validatedEmptyLocations.has(location) && expected === 0
+            ? ['COMPLETA', 'success']
+            : scanned === 0
             ? ['PENDIENTE', 'secondary']
             : scanned >= expected
                 ? ['COMPLETA', 'success']

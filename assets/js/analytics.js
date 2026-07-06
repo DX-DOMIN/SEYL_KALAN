@@ -1,6 +1,9 @@
 // INVENTARIO FÍSICO
 
-const physicalCount = readStoredArray('physicalCount');
+const analyticsPeriod = KhaironCountData.getStoredPeriod();
+const physicalCount = KhaironCountData.getUnifiedCountEvents({
+    mode: 'operational', startDate: analyticsPeriod.startDate, endDate: analyticsPeriod.endDate
+});
 
 // ELEMENTOS HTML
 
@@ -45,8 +48,7 @@ function renderAnalytics() {
 
     physicalCount.forEach(item => {
 
-        const diferencia =
-            item.fisico - item.sistema;
+        const diferencia = item.difference;
 
         let estado = '';
         let recomendacion = '';
@@ -54,12 +56,15 @@ function renderAnalytics() {
 
         // OK
 
-        if (diferencia === 0 && !item.anomaly) {
+        if (item.normalizedStatus === 'OK') {
 
-            estado = 'OK';
+            estado = item.rawStatus === 'UBICACION_VACIA_VALIDADA'
+                ? 'VACIA VALIDADA'
+                : 'OK';
 
-            recomendacion =
-                'Inventario correcto';
+            recomendacion = item.rawStatus === 'UBICACION_VACIA_VALIDADA'
+                ? 'Ubicacion revisada sin stock fisico ni sistema'
+                : 'Inventario correcto';
 
             clase = 'success';
 
@@ -69,12 +74,20 @@ function renderAnalytics() {
 
         // SOBRANTE
 
-        else if (diferencia > 0 || item.anomaly) {
+        else if (['SOBRANTE', 'FUERA DE UBICACION'].includes(item.normalizedStatus)) {
 
-            estado = 'SOBRANTE';
+            estado = item.rawStatus === 'NO_REGISTRADO'
+                ? 'NO REGISTRADO'
+                : item.normalizedStatus;
 
             recomendacion =
                 'Ingresar mercancía sobrante';
+
+            recomendacion = item.normalizedStatus === 'FUERA DE UBICACION'
+                ? `Revisar ubicacion esperada: ${item.expectedLocation || 'SIN DATO'}`
+                : item.rawStatus === 'NO_REGISTRADO'
+                    ? 'Investigar UPC no registrado'
+                    : 'Revisar sobrante fisico';
 
             clase = 'warning';
 
@@ -86,7 +99,9 @@ function renderAnalytics() {
 
         else {
 
-            estado = 'FALTANTE';
+            estado = item.rawStatus === 'UBICACION_VACIA_CON_STOCK_SISTEMA'
+                ? 'VACIA CON STOCK SISTEMA'
+                : 'FALTANTE';
 
             recomendacion =
                 'Enviar diferencia a LOST';
@@ -99,10 +114,10 @@ function renderAnalytics() {
 
         // FUERA DE UBICACIÓN
 
-        if (item.anomaly) {
+        if (item.hasConflict) {
 
             recomendacion +=
-                ' | Posible movimiento incorrecto';
+                ' | CONFLICTO ENTRE EVIDENCIAS';
 
         }
 
@@ -114,11 +129,11 @@ function renderAnalytics() {
 
                 <td>${escapeHTML(item.upc)}</td>
 
-                <td>${escapeHTML(item.descripcion)}</td>
+                <td>${escapeHTML(item.description)}</td>
 
-                <td>${item.sistema}</td>
+                <td>${item.systemQty}</td>
 
-                <td>${item.fisico}</td>
+                <td>${item.physicalQty}</td>
 
                 <td>${diferencia}</td>
 

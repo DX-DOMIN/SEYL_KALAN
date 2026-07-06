@@ -7,7 +7,10 @@ const heatmapContainer =
 
 // DATOS
 
-const physical = readStoredArray('physicalCount');
+const heatmapPeriod = KhaironCountData.getStoredPeriod();
+const physical = KhaironCountData.getUnifiedCountEvents({
+    mode: 'operational', startDate: heatmapPeriod.startDate, endDate: heatmapPeriod.endDate
+});
 
 // AGRUPAR UBICACIONES
 
@@ -16,6 +19,8 @@ const locations = {};
 // RECORRER
 
 physical.forEach(item => {
+
+    item = { ...item, location: item.location || item.ubicacion };
 
     const location =
         item.location || 'SIN UBICACIÓN';
@@ -40,9 +45,11 @@ physical.forEach(item => {
 
     // ERROR
 
-    if (
-        Number(item.fisico) !== Number(item.sistema) || item.anomaly
-    ) {
+    const systemQty = Number(item.systemQty ?? item.cantidadSistema ?? item.sistema) || 0;
+    const physicalQty = Number(item.physicalQty ?? item.scannedQty ?? item.cantidadFisica ?? item.fisico) || 0;
+    const rawStatus = String(item.rawStatus || '').toUpperCase();
+
+    if (item.normalizedStatus !== 'OK' || physicalQty !== systemQty || !item.isLocationAccurate) {
 
         locations[location].errors++;
 
@@ -166,6 +173,15 @@ function readStoredArray(key) {
     catch {
         return [];
     }
+}
+
+function normalizeCountStatus(status, physicalQty, systemQty) {
+    if (['OK', 'UBICACION_VACIA_VALIDADA', 'COMPLETA', 'VACIA_VALIDADA'].includes(status)) return 'OK';
+    if (['FALTANTE', 'FALTANTE_TOTAL', 'UBICACION_VACIA_CON_STOCK_SISTEMA', 'VACIA_CON_STOCK_SISTEMA'].includes(status)) return 'FALTANTE';
+    if (['SOBRANTE', 'FUERA_DE_UBICACION', 'NO_REGISTRADO'].includes(status)) return 'SOBRANTE';
+    if (physicalQty < systemQty) return 'FALTANTE';
+    if (physicalQty > systemQty) return 'SOBRANTE';
+    return 'OK';
 }
 
 function escapeHTML(value) {

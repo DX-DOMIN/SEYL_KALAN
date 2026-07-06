@@ -2,7 +2,19 @@
 // DATOS
 // =====================================
 
-const rawPhysical = readStoredArray('physicalCount');
+const reportPeriod = KhaironCountData.getStoredPeriod();
+const rawPhysical = KhaironCountData.getUnifiedCountEvents({
+    mode: 'operational',
+    startDate: reportPeriod.startDate,
+    endDate: reportPeriod.endDate
+});
+const reportEvidence = KhaironCountData.getUnifiedCountEvents({
+    mode: 'evidence', includeVoided: true,
+    startDate: reportPeriod.startDate, endDate: reportPeriod.endDate
+});
+const reportStats = KhaironCountData.getUnifiedCountStats({
+    mode: 'operational', startDate: reportPeriod.startDate, endDate: reportPeriod.endDate
+});
 
 // =====================================
 // NORMALIZAR DATOS
@@ -17,19 +29,50 @@ const physical = rawPhysical.map(item => ({
         item.upc || 'N/A',
 
     descripcion:
-        item.descripcion || 'N/A',
+        item.descripcion || item.description || 'N/A',
 
     sistema:
-        item.sistema || 0,
+        Number(item.sistema ?? item.systemQty ?? item.cantidadSistema) || 0,
 
     fisico:
-        item.fisico || 0,
+        Number(item.fisico ?? item.physicalQty ?? item.scannedQty ?? item.cantidadFisica) || 0,
 
     fecha:
-        item.fecha || '',
+        item.fecha || item.savedAt || '',
 
     anomaly:
-        item.anomaly || false
+        item.anomaly || false,
+
+    difference:
+        Number(item.difference ?? item.diferencia ?? ((item.fisico ?? item.physicalQty ?? 0) - (item.sistema ?? item.systemQty ?? 0))) || 0,
+
+    status:
+        normalizeCountStatus(item.rawStatus || item.lineStatus || item.status || item.estado, item),
+
+    rawStatus:
+        item.rawStatus || item.lineStatus || item.status || item.estado || '',
+
+    countDate:
+        item.countDate || '',
+
+    countMode:
+        item.countMode || 'LEGACY',
+
+    locationSweepId:
+        item.locationSweepId || '',
+
+    user: item.user || 'Sin usuario',
+    timestamp: item.timestamp || '',
+    observations: item.observations || '',
+    normalizedStatus: item.normalizedStatus || item.status || '',
+    voided: Boolean(item.voided),
+    hasConflict: Boolean(item.hasConflict),
+    conflictGroupId: item.conflictGroupId || '',
+    conflictReason: item.conflictReason || '',
+    isAggregated: Boolean(item.isAggregated),
+    aggregatedFromCount: Number(item.aggregatedFromCount) || 1,
+    aggregatedFromIds: Array.isArray(item.aggregatedFromIds) ? item.aggregatedFromIds : [],
+    invalidDate: Boolean(item.invalidDate)
 
 }));
 
@@ -71,7 +114,38 @@ function exportExcel() {
             item.fisico,
 
         Fecha_Conteo:
-            item.fecha
+            item.fecha,
+
+        Diferencia:
+            item.difference,
+
+        Estado:
+            item.status,
+
+        Estado_Detallado:
+            item.rawStatus,
+
+        Fecha_Operativa:
+            item.countDate,
+
+        Modo_Conteo:
+            item.countMode,
+
+        ID_Barrido:
+            item.locationSweepId,
+
+        Usuario: item.user,
+        Fecha_Hora: item.timestamp,
+        Observaciones: item.observations,
+        Estado_Normalizado: item.normalizedStatus,
+        Anulado: item.voided ? 'SI' : 'NO',
+        Conflicto: item.hasConflict ? 'SI' : 'NO',
+        Grupo_Conflicto: item.conflictGroupId,
+        Motivo_Conflicto: item.conflictReason,
+        Acumulado: item.isAggregated ? 'SI' : 'NO',
+        Lineas_Acumuladas: item.aggregatedFromCount,
+        IDs_Acumulados: item.aggregatedFromIds.join(' | '),
+        Fecha_Invalida: item.invalidDate ? 'SI' : 'NO'
 
     }));
 
@@ -96,6 +170,28 @@ function exportExcel() {
         'Inventario'
 
     );
+
+    const evidenceRows = reportEvidence.map(event => ({
+        eventFingerprint: event.eventFingerprint,
+        Ubicacion: event.location,
+        UPC: event.upc,
+        Descripcion: event.description,
+        Sistema: event.systemQty,
+        Fisico: event.physicalQty,
+        Diferencia: event.difference,
+        Estado_Detallado: event.rawStatus,
+        Estado_Normalizado: event.normalizedStatus,
+        Usuario: event.user,
+        Fecha_Hora: event.timestamp,
+        Fecha_Operativa: event.countDate,
+        ID_Barrido: event.locationSweepId,
+        Anulado: event.voided ? 'SI' : 'NO',
+        Fecha_Invalida: event.invalidDate ? 'SI' : 'NO'
+    }));
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(evidenceRows), 'Evidencia');
+    const conflictRows = exportData.filter(row => row.Conflicto === 'SI');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(conflictRows), 'Conflictos');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([reportStats]), 'Resumen_Consolidacion');
 
     // DESCARGAR
 
@@ -173,6 +269,8 @@ function exportTXT() {
 // =====================================
 
 async function exportProgressExcel() {
+
+    return exportUnifiedProgressExcel();
 
     await initDB();
 
@@ -299,6 +397,51 @@ async function exportProgressExcel() {
 
 }
 
+async function exportUnifiedProgressExcel() {
+    await initDB();
+    const inventory = await getInventory();
+    const period = KhaironCountData.getStoredPeriod();
+    const events = KhaironCountData.getUnifiedCountEvents({
+        mode: 'operational', startDate: period.startDate, endDate: period.endDate
+    });
+    let layout = [];
+    try {
+        const response = await fetch('../assets/data/layout-tr3.json');
+        if (response.ok) layout = await response.json();
+    } catch (error) {
+        console.warn('No fue posible cargar layout para exportar avance:', error);
+    }
+    const locations = new Set([
+        ...layout.map(item => String(item.location || '').trim().toUpperCase()),
+        ...inventory.map(item => String(item.ubicacion || '').trim().toUpperCase()),
+        ...events.map(item => item.location)
+    ].filter(Boolean));
+    const report = [...locations].sort().map(location => {
+        const locationEvents = events.filter(event => event.location === location);
+        const expected = new Set(inventory
+            .filter(item => String(item.ubicacion || '').trim().toUpperCase() === location)
+            .map(item => String(item.upc || '').trim().toUpperCase()).filter(Boolean)).size;
+        const scanned = new Set(locationEvents.map(item => item.upc)
+            .filter(upc => upc && upc !== '__EMPTY__')).size;
+        const layoutItem = layout.find(item => String(item.location || '').trim().toUpperCase() === location);
+        return {
+            ubicacion: location,
+            cliente: layoutItem?.account || 'SIN CLIENTE',
+            esperados: expected,
+            escaneados: scanned,
+            revisada: locationEvents.length ? 'SI' : 'NO',
+            estado: locationEvents.length ? 'COMPLETA' : 'PENDIENTE',
+            desde: period.startDate || 'INICIO',
+            hasta: period.endDate || 'ACTUAL',
+            conflictos: locationEvents.filter(event => event.hasConflict).length
+        };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(report);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Avance_Ubicaciones');
+    XLSX.writeFile(workbook, 'KHAIRON_Avance_Ubicaciones.xlsx');
+}
+
 // =====================================
 // PAQUETES DE CONSOLIDACION
 // =====================================
@@ -329,7 +472,7 @@ function exportCountPackage() {
     const deviceId = getDeviceId();
     const packageData = {
         schema: 'khairon-count-package',
-        version: 1,
+        version: 2,
         exportedAt: now.toISOString(),
         source: {
             deviceId,
@@ -396,25 +539,36 @@ async function importPackageFile(file) {
 
     const previousHistory = localStorage.getItem('scanHistory');
     const history = readStoredArray('scanHistory');
-    const known = new Set(history.map(eventFingerprint));
+    const sourceDeviceId = packageData.source?.deviceId || 'Equipo sin identificar';
+    const fingerprints = new Set(history.map(item =>
+        KhaironCountData.buildCountFingerprint(KhaironCountData.normalizeCountEvent(item, { source: 'scanHistory' }))
+    ));
     const batchId = createId('import');
 
     packageData.events.forEach(rawEvent => {
-        const normalized = normalizeImportedEvent(rawEvent);
+        const normalized = normalizeImportedEvent(rawEvent, sourceDeviceId);
         if (!normalized) {
             result.rejected += 1;
             return;
         }
 
-        const fingerprint = eventFingerprint(normalized);
-        if (known.has(fingerprint)) {
+        const fingerprint = KhaironCountData.buildCountFingerprint(normalized);
+        if (fingerprints.has(fingerprint)) {
             result.duplicated += 1;
             return;
         }
 
+        const packageId = packageData.packageId || [
+            packageData.source?.deviceId || 'SIN-EQUIPO',
+            packageData.exportedAt || packageData.eventCount || file.name
+        ].join('|');
+        normalized.packageId = packageId;
+        if (String(rawEvent.id || '').startsWith('xlsx-') || rawEvent.user === 'Importado desde Excel') {
+            normalized.aggregationMode = 'SUM';
+        }
         normalized.importBatchId = batchId;
         history.push(normalized);
-        known.add(fingerprint);
+        fingerprints.add(fingerprint);
         result.accepted += 1;
     });
 
@@ -503,14 +657,16 @@ async function readExcelPackage(file) {
         };
     });
 
+    const source = { deviceId: `Excel: ${file.name}`, user: 'Importacion Excel' };
+    const consolidatedEvents = consolidateDailyEvents(events, source.deviceId);
     return {
         schema: 'khairon-count-package',
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
-        source: { deviceId: `Excel: ${file.name}`, user: 'Importacion Excel' },
-        eventCount: events.length,
+        source,
+        eventCount: consolidatedEvents.length,
         sourceDuplicates: rows.length - uniqueRows.length,
-        events
+        events: consolidatedEvents
     };
 }
 
@@ -544,34 +700,75 @@ function parseExcelReportDate(value) {
     throw new Error('Fecha de conteo invalida');
 }
 
-function normalizeImportedEvent(event) {
-    const timestamp = new Date(event.timestamp);
-    if (!event.location || !event.upc || Number.isNaN(timestamp.getTime())) return null;
+function normalizeImportedEvent(event, sourceDeviceId) {
+    const normalized = KhaironCountData.normalizeCountEvent(event, {
+        source: 'scanHistory',
+        sourceDeviceId
+    });
+    return normalized.location && normalized.upc && normalized.countDate ? normalized : null;
 
-    const systemQty = Number(event.systemQty) || 0;
-    const physicalQty = Number(event.physicalQty) || 0;
+    const timestamp = new Date(event.timestamp || event.savedAt || event.fecha);
+    const location = event.location || event.ubicacion;
+    if (!location || !event.upc || Number.isNaN(timestamp.getTime())) return null;
+
+    const systemQty = Number(event.systemQty ?? event.cantidadSistema ?? event.expectedQty ?? event.sistema) || 0;
+    const physicalQty = Number(event.physicalQty ?? event.scannedQty ?? event.cantidadFisica ?? event.fisico) || 0;
+    const difference = Number(event.difference ?? event.diferencia ?? (physicalQty - systemQty)) || 0;
+    const rawStatus = event.rawStatus || event.lineStatus || event.status || event.estado;
+    const status = normalizeCountStatus(rawStatus, { systemQty, physicalQty });
+    const normalizedLocation = String(location).trim().toUpperCase();
+    const countDate = event.countDate || localEventDateKey(timestamp);
     return {
-        id: event.id || createId('event'),
+        id: event.id || `event-${deterministicEventId(countDate, normalizedLocation, event.upc)}`,
         timestamp: timestamp.toISOString(),
-        location: String(event.location).trim().toUpperCase(),
+        location: normalizedLocation,
+        ubicacion: normalizedLocation,
         upc: String(event.upc).trim(),
-        description: event.description || 'Sin descripcion',
-        scannedQty: Number(event.scannedQty) || 0,
+        description: event.description || event.descripcion || 'Sin descripcion',
+        descripcion: event.description || event.descripcion || 'Sin descripcion',
+        scannedQty: physicalQty,
         systemQty,
+        cantidadSistema: systemQty,
         physicalQty,
-        difference: physicalQty - systemQty,
+        cantidadFisica: physicalQty,
+        difference,
+        diferencia: difference,
         isInventoryAccurate: physicalQty === systemQty,
         isLocationAccurate: event.isLocationAccurate !== false,
-        expectedLocation: event.expectedLocation || event.location,
-        user: event.user || 'Sin usuario'
+        expectedLocation: event.expectedLocation || normalizedLocation,
+        user: event.user || 'Sin usuario',
+        countDate,
+        countMode: event.countMode || 'LEGACY',
+        locationSweepId: event.locationSweepId,
+        rawStatus,
+        lineStatus: rawStatus,
+        status,
+        estado: status,
+        sourceDeviceId: event.sourceDeviceId || sourceDeviceId,
+        observations: event.observations || '',
+        isEmptyLocationValidation: Boolean(event.isEmptyLocationValidation),
+        foundInOtherLocations: Array.isArray(event.foundInOtherLocations) ? event.foundInOtherLocations : []
     };
 }
 
 function getExportableEvents() {
-    const history = readStoredArray('scanHistory');
-    if (history.length) return history;
+    return KhaironCountData.getUnifiedCountEvents({ mode: 'evidence' });
 
-    return readStoredArray('physicalCount').map((item, index) => {
+    const history = readStoredArray('scanHistory');
+    const sweepEvents = readStoredArray('khaironLocationSweeps').flatMap(sweep =>
+        (Array.isArray(sweep.resultLines) ? sweep.resultLines : []).map(line => ({
+            ...line,
+            timestamp: sweep.savedAt || sweep.createdAt,
+            countDate: sweep.countDate,
+            location: line.location || sweep.location,
+            locationSweepId: sweep.id,
+            countMode: 'LOCATION_SWEEP',
+            observations: sweep.observations
+        }))
+    );
+    if (history.length || sweepEvents.length) return consolidateDailyEvents([...history, ...sweepEvents], getDeviceId());
+
+    return consolidateDailyEvents(readStoredArray('physicalCount').map((item, index) => {
         const timestamp = parseReportDate(item.fecha);
         const systemQty = Number(item.sistema) || 0;
         const physicalQty = Number(item.fisico) || 0;
@@ -590,13 +787,83 @@ function getExportableEvents() {
             expectedLocation: item.ubicacionCorrecta || item.location,
             user: 'Registro anterior'
         };
+    }), getDeviceId());
+}
+
+function consolidateDailyEvents(events, fallbackSource) {
+    const consolidated = new Map();
+    events.map(event => normalizeImportedEvent(event, fallbackSource)).filter(Boolean).forEach(event => {
+        const key = dailyEventKey(event);
+        const current = consolidated.get(key);
+        if (!current) {
+            consolidated.set(key, { ...event });
+            return;
+        }
+
+        if (isExcelEvent(event) && isExcelEvent(current)) {
+            current.systemQty += event.systemQty;
+            current.physicalQty += event.physicalQty;
+            current.scannedQty += event.scannedQty;
+            current.difference = current.physicalQty - current.systemQty;
+            current.isInventoryAccurate = current.difference === 0;
+            current.isLocationAccurate = current.isLocationAccurate && event.isLocationAccurate;
+            if (event.timestamp > current.timestamp) current.timestamp = event.timestamp;
+            return;
+        }
+
+        if (event.timestamp > current.timestamp) consolidated.set(key, { ...event });
     });
+    return [...consolidated.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+function dailyEventKey(event) {
+    return KhaironCountData.buildOperationalKey(event);
+
+    const date = event.countDate || localEventDateKey(event.timestamp);
+    return `${date}|${String(event.location || '').trim().toUpperCase()}|${String(event.upc || '').trim().toUpperCase()}`;
+}
+
+function normalizeCountStatus(status, item = {}) {
+    return KhaironCountData.normalizeCountStatus(status, item.rawStatus || status);
+
+    const value = String(status || '').trim().toUpperCase();
+    if (['OK', 'UBICACION_VACIA_VALIDADA', 'COMPLETA', 'VACIA_VALIDADA'].includes(value)) return 'OK';
+    if (['FALTANTE', 'FALTANTE_TOTAL', 'UBICACION_VACIA_CON_STOCK_SISTEMA', 'VACIA_CON_STOCK_SISTEMA'].includes(value)) return 'FALTANTE';
+    if (['SOBRANTE', 'FUERA_DE_UBICACION', 'NO_REGISTRADO'].includes(value)) return 'SOBRANTE';
+    const systemQty = Number(item.systemQty ?? item.sistema ?? item.cantidadSistema) || 0;
+    const physicalQty = Number(item.physicalQty ?? item.fisico ?? item.scannedQty ?? item.cantidadFisica) || 0;
+    if (physicalQty < systemQty) return 'FALTANTE';
+    if (physicalQty > systemQty) return 'SOBRANTE';
+    return 'OK';
+}
+
+function deterministicEventId(countDate, location, upc) {
+    const value = `${countDate}|${location}|${String(upc).trim().toUpperCase()}`;
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return `${countDate}-${(hash >>> 0).toString(36)}`;
+}
+
+function localEventDateKey(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return 'SIN-FECHA';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function isExcelEvent(event) {
+    return String(event.id || '').startsWith('xlsx-') || event.user === 'Importado desde Excel';
 }
 
 function removeImportBatch(batchId) {
     if (!batchId || !confirm('¿Retirar del concentrado los eventos de esta importacion?')) return;
     const history = readStoredArray('scanHistory');
-    const filtered = history.filter(event => event.importBatchId !== batchId);
+    const filtered = history.flatMap(event => {
+        if (event.importBatchId !== batchId) return [event];
+        return event.previousImportEvent ? [event.previousImportEvent] : [];
+    });
     localStorage.setItem('scanHistory', JSON.stringify(filtered));
 
     const logs = readStoredArray('consolidationImports').filter(log => log.batchId !== batchId);
@@ -656,7 +923,7 @@ function renderImportHistory() {
         });
     }
 
-    const total = readStoredArray('scanHistory').length;
+    const total = consolidateDailyEvents(readStoredArray('scanHistory'), getDeviceId()).length;
     const counter = document.getElementById('consolidatedEventCount');
     if (counter) counter.textContent = `${total.toLocaleString('es-MX')} eventos consolidados`;
 }
